@@ -56,17 +56,16 @@ Caregiver Coordination Hub is a collaborative web platform designed to help fami
 1. Clone this repository:
 git clone https://github.com/kishlayamishra02/Caregiver-Coordination-Hub.git
 
-text
 2. Install dependencies:
 cd Caregiver-Coordination-Hub
 npm install
 
-text
+
 3. Set up your Firebase project and add your config to `.env` or `src/firebase.js`
 4. Start the development server:
 npm start
 
-text
+
 
 ---
 
