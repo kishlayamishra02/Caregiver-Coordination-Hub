@@ -54,7 +54,7 @@ Caregiver Coordination Hub is a collaborative web platform designed to help fami
 ## How to Run Locally
 
 1. Clone this repository:
-git clone https://github.com/kishlayamishra02/Caregiver-Coordination-Hub.git
+`git clone https://github.com/kishlayamishra02/Caregiver-Coordination-Hub.git`
 
 2. Install dependencies:
 `cd Caregiver-Coordination-Hub` and 
