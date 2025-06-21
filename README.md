@@ -43,7 +43,7 @@ caregiver-hub/ \
 │  ├─ pages/    \
 │  │  ├─ Login.jsx  \
 │  │  ├─ Register.jsx  \ 
-│  │  └─ Dashboard.jsx   \
+│  │  └─ Dashboard.jsx  \
 │  ├─ App.jsx  \
 │  └─ main.jsx  \
 ├─ package.json   \
