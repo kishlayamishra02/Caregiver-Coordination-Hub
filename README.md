@@ -34,7 +34,6 @@ Caregiver Coordination Hub is a collaborative web platform designed to help fami
 ## Workflow Structure
 
 ```
-
 caregiver-hub/
 ├─ public/
 ├─ src/
@@ -50,7 +49,6 @@ caregiver-hub/
 │  └─ main.jsx
 ├─ package.json
 └─ vite.config.js
-
 ```
 
 ---
