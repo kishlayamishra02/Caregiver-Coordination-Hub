@@ -31,7 +31,7 @@ Caregiver Coordination Hub is a collaborative web platform designed to help fami
 
 ---
 
-## Folder and its Components Structure
+## Workflow Structure
 
 caregiver-hub/
 ├─ public/
