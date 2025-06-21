@@ -36,8 +36,8 @@ Caregiver Coordination Hub is a collaborative web platform designed to help fami
 | Name              | Role                  |
 |-------------------|-----------------------|
 | Kishlaya Mishra   | Team Lead, Deployment, Coordination |
-| Madhav            | Backend Developer (Firebase, API)  |
 | Ramam             | Frontend Developer (UI/UX, React)  |
+| Madhav            | Backend Developer (Firebase, API)  |
 | Arjit             | Flexible (Integration, Testing, Docs) |
 
 ---
