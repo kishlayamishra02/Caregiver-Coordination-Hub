@@ -50,7 +50,6 @@ caregiver-hub/
 ├─ package.json
 └─ vite.config.js
 ```
-
 ---
 
 ## Team UnityLink
