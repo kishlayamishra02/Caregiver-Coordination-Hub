@@ -8,7 +8,7 @@
 
 ## Overview
 
-Caregiver Coordination Hub is a collaborative web platform designed to help families and caregivers efficiently coordinate care tasks, appointments, and notes for patients. Our goal is to simplify daily caregiving, improve communication, and ensure nothing important is missed—especially for those supporting elderly or chronically ill loved ones.
+Caregiver Coordination Hub is a collaborative web platform designed to help families and caregivers efficiently coordinate care tasks, appointments, and notes for patients. Our goal is to simplify daily caregiving, improve communication, and ensure nothing important is missed, especially for those supporting elderly or chronically ill loved ones.
 
 ---
 
@@ -24,7 +24,7 @@ Caregiver Coordination Hub is a collaborative web platform designed to help fami
 
 ## Tech Stack
 
-- **Frontend:** React.js (deployed on Netlify)
+- **Frontend:** React.js + Vite.js (deployed on Netlify)
 - **Backend:** Firebase (Authentication, Firestore, Cloud Messaging)
 - **APIs:** Google Calendar API (for calendar sync), Firebase Cloud Messaging (for notifications)
 - **Version Control:** GitHub
