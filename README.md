@@ -31,6 +31,26 @@ Caregiver Coordination Hub is a collaborative web platform designed to help fami
 
 ---
 
+## Folder and its Components Structure
+
+caregiver-hub/
+├─ public/
+├─ src/
+│  ├─ components/
+│  │  ├─ Header.jsx
+│  │  ├─ Sidebar.jsx
+│  │  └─ Layout.jsx    
+│  ├─ pages/
+│  │  ├─ Login.jsx
+│  │  ├─ Register.jsx
+│  │  └─ Dashboard.jsx
+│  ├─ App.jsx
+│  └─ main.jsx
+├─ package.json
+└─ vite.config.js
+
+---
+
 ## Team UnityLink
 
 | Name              | Role                  |
