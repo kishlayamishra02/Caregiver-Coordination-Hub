@@ -40,16 +40,20 @@ caregiver-hub/
 │  ├─ components/
 │  │  ├─ Header.jsx
 │  │  ├─ Sidebar.jsx
-│  │  └─ Layout.jsx    
+│  │  ├─ Layout.jsx
+│  │  ├─ TaskForm.jsx
+│  │  ├─ TaskList.jsx
+│  │  └─ CalendarView.jsx
 │  ├─ pages/
 │  │  ├─ Login.jsx
 │  │  ├─ Register.jsx
-│  │  └─ Dashboard.jsx
+│  │  ├─ Dashboard.jsx
+│  │  ├─ Tasks.jsx
+│  │  └─ Calendar.jsx
 │  ├─ App.jsx
 │  └─ main.jsx
-├─ package.json
-└─ vite.config.js
 ```
+
 ---
 
 ## Team UnityLink
