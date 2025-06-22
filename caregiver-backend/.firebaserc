@@ -1,7 +1,5 @@
 {
   "projects": {
-    "default": "unity-link-26935"
-  },
-  "targets": {},
-  "etags": {}
+    "default": "caregiver-coordination-hub"
+  }
 }

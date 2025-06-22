@@ -1,0 +1,4 @@
+http://localhost:5001/caregiver-coordination-hub/us-central1/createUser - POST
+http://localhost:5001/caregiver-coordination-hub/us-central1/getUser?uid=user001 - GET
+http://localhost:5001/caregiver-coordination-hub/us-central1/updateUser - PUT
+http://localhost:5001/caregiver-coordination-hub/us-central1/deleteUser - DELETE

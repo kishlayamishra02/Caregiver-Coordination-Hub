@@ -1,25 +1,26 @@
-{ "name": "functions",
-  "description": "Cloud Functions for Firebase",
-  "scripts": {
-    "lint": "eslint .",
-    "serve": "firebase emulators:start --only functions",
-    "shell": "firebase functions:shell",
-    "start": "npm run shell",
-    "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
-  },
-  "engines": {
-    "node": "18"
-  },
+{
+  "name": "caregiver-coordination-hub",
+  "version": "1.0.0",
+  "description": "**A project by Team UnityLink for CS Base Hack4Health 2025**",
   "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kishlayamishra02/Caregiver-Coordination-Hub.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kishlayamishra02/Caregiver-Coordination-Hub/issues"
+  },
+  "homepage": "https://github.com/kishlayamishra02/Caregiver-Coordination-Hub#readme",
   "dependencies": {
-    "firebase-admin": "^12.7.0",
-    "firebase-functions": "^4.4.1"
-  },
-  "devDependencies": {
-    "eslint": "^8.15.0",
-    "eslint-config-google": "^0.14.0",
-    "firebase-functions-test": "^3.1.0"
-  },
-  "private": true
+    "firebase-admin": "^13.4.0",
+    "firebase-functions": "^6.3.2",
+    "googleapis": "^150.0.1"
+  }
 }

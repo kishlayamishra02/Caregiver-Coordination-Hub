@@ -73,3 +73,5 @@ serviceAccountKey.json
 
 .DS_Store
 
+# .gitignore
+functions/credentials.json

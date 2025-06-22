@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/kishlayamishra02/Caregiver-Coordination-Hub#readme",
   "dependencies": {
+    "20": "^3.1.9",
     "firebase-admin": "^13.4.0"
   }
 }
