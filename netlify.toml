@@ -13,3 +13,8 @@
   VITE_VAPID_KEY = "${VAPID_KEY}"
   VITE_BACKEND_URL = "${BACKEND_URL}"
   VITE_FRONTEND_URL = "https://caregiverhub.netlify.app"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
