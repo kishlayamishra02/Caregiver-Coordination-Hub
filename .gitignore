@@ -107,3 +107,6 @@ firestore-debug.log
 .vscode/
 *.swp
 *.swo
+
+# Local Netlify folder
+.netlify
