@@ -29,30 +29,6 @@ Caregiver Coordination Hub is a collaborative web platform designed to help fami
 - **APIs:** Google Calendar API (for calendar sync), Firebase Cloud Messaging (for notifications)
 - **Version Control:** GitHub
 
----
-
-## Workflow Structure
-
-```
-caregiver-hub/
-├─ public/
-├─ src/
-│  ├─ components/
-│  │  ├─ Header.jsx
-│  │  ├─ Sidebar.jsx
-│  │  ├─ Layout.jsx
-│  │  ├─ TaskForm.jsx
-│  │  ├─ TaskList.jsx
-│  │  └─ CalendarView.jsx
-│  ├─ pages/
-│  │  ├─ Login.jsx
-│  │  ├─ Register.jsx
-│  │  ├─ Dashboard.jsx
-│  │  ├─ Tasks.jsx
-│  │  └─ Calendar.jsx
-│  ├─ App.jsx
-│  └─ main.jsx
-```
 
 ---
 
