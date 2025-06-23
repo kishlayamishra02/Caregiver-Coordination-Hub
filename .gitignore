@@ -46,6 +46,8 @@ build/Release
 
 # Dependency directories
 node_modules/
+caregiver-backend/functions/node_modules/
+caregiver-hub/node_modules/
 
 # Optional npm cache directory
 .npm
@@ -74,4 +76,34 @@ serviceAccountKey.json
 .DS_Store
 
 # .gitignore
-functions/credentials.json
+caregiver-backend/functions/credentials.json
+
+*.local
+
+# Vite-specific files:
+dist/
+build/
+.cache/
+node_modules/.cache
+
+# Firebase-specific patterns
+.endpointsForTestingRestAPIs
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+
+# Environment files:
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Source maps
+*.map
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
