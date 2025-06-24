@@ -12,22 +12,20 @@ export default function Layout() {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f5f7fa' }}>
-      <Header open={open} setOpen={setOpen} />
       <Sidebar open={open} setOpen={setOpen} />
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          ml: open ? `${drawerWidth}px` : 0,
-          transition: 'margin-left 0.3s ease-in-out',
-          width: `calc(100% - ${drawerWidth}px)`,
+          transition: 'all 0.3s ease-in-out',
+          ml: 0,
           bgcolor: '#ffffff',
-          boxShadow: open ? '0 0 10px rgba(0,0,0,0.1)' : 'none',
-          borderRadius: open ? '0 24px 24px 0' : '0 0 0 0',
           overflow: 'hidden',
           position: 'relative',
+          borderRadius: '0 24px 24px 0',
         }}
       >
+        <Header open={open} setOpen={setOpen} />
         <Toolbar />
         <Box
           sx={{

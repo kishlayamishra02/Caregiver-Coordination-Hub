@@ -5,13 +5,11 @@ import {
   Card,
   CardContent,
   Typography,
-  Button,
-  LinearProgress,
   Avatar,
-  Paper,
   useTheme,
   styled,
   alpha,
+  Container,
 } from '@mui/material';
 import {
   BarChart,
@@ -32,15 +30,11 @@ import {
   limit,
 } from 'firebase/firestore';
 import {
-  Today,
-  Event,
   Task,
+  Event,
   NoteAdd,
   TrendingUp,
-  TrendingDown,
-  Person,
-  CalendarToday,
-  Description,
+  Check,
 } from '@mui/icons-material';
 
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -48,6 +42,7 @@ const StyledCard = styled(Card)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   transition: '0.3s',
+  padding: theme.spacing(2),
   '&:hover': {
     boxShadow: theme.shadows[8],
   },
@@ -56,8 +51,8 @@ const StyledCard = styled(Card)(({ theme }) => ({
 const StatCard = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
+  padding: theme.spacing(2),
   gap: theme.spacing(2),
-  p: theme.spacing(2),
   borderRadius: theme.shape.borderRadius,
   backgroundColor: theme.palette.background.paper,
 }));
@@ -74,14 +69,11 @@ export default function Dashboard() {
   const theme = useTheme();
 
   useEffect(() => {
-    // Fetch statistics
     const fetchStats = async () => {
       try {
-        // Get total tasks
         const tasksSnapshot = await getDocs(collection(db, 'tasks'));
         const totalTasks = tasksSnapshot.size;
-        
-        // Get completed tasks
+
         const completedTasksQuery = query(
           collection(db, 'tasks'),
           where('status', '==', 'completed')
@@ -89,7 +81,6 @@ export default function Dashboard() {
         const completedTasksSnapshot = await getDocs(completedTasksQuery);
         const completedTasks = completedTasksSnapshot.size;
 
-        // Get upcoming events
         const eventsQuery = query(
           collection(db, 'events'),
           where('date', '>=', new Date())
@@ -97,25 +88,16 @@ export default function Dashboard() {
         const eventsSnapshot = await getDocs(eventsQuery);
         const upcomingEvents = eventsSnapshot.size;
 
-        // Get notes
         const notesSnapshot = await getDocs(collection(db, 'notes'));
         const notes = notesSnapshot.size;
 
-        setStats({
-          totalTasks,
-          completedTasks,
-          upcomingEvents,
-          notes,
-        });
+        setStats({ totalTasks, completedTasks, upcomingEvents, notes });
 
-        // Prepare task completion data for chart
-        const completionData = [
+        setTaskCompletionData([
           { name: 'Completed', value: completedTasks },
           { name: 'Pending', value: totalTasks - completedTasks },
-        ];
-        setTaskCompletionData(completionData);
+        ]);
 
-        // Get recent tasks
         const recentTasksQuery = query(
           collection(db, 'tasks'),
           orderBy('createdAt', 'desc'),
@@ -136,127 +118,61 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <Box>
-      {/* Header with quick actions */}
+    <Container maxWidth={false} sx={{ px: { xs: 2, md: 4 }, py: 4 }}>
+      {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <Typography variant="h4" component="h1" gutterBottom>
-              Dashboard
-            </Typography>
-            <Typography variant="subtitle1" color="text.secondary">
-              Overview of your caregiver coordination
-            </Typography>
-          </Grid>
-        </Grid>
+        <Typography variant="h4" gutterBottom>
+          Dashboard
+        </Typography>
+        <Typography variant="subtitle1" color="text.secondary">
+          Overview of your caregiver coordination
+        </Typography>
       </Box>
 
-      {/* Stats cards */}
-      <Grid container spacing={2}>
-        <Grid item xs={12} sm={6} md={3}>
-          <StyledCard>
-            <StatCard>
-              <Avatar
-                sx={{
-                  bgcolor: theme.palette.success.main,
-                  color: theme.palette.success.contrastText,
-                }}
-              >
-                <Task />
-              </Avatar>
-              <Box>
-                <Typography variant="h6">Total Tasks</Typography>
-                <Typography variant="h4" gutterBottom>
-                  {stats.totalTasks}
-                </Typography>
-              </Box>
-            </StatCard>
-          </StyledCard>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <StyledCard>
-            <StatCard>
-              <Avatar
-                sx={{
-                  bgcolor: theme.palette.primary.main,
-                  color: theme.palette.primary.contrastText,
-                }}
-              >
-                <TrendingUp />
-              </Avatar>
-              <Box>
-                <Typography variant="h6">Completed Tasks</Typography>
-                <Typography variant="h4" gutterBottom>
-                  {stats.completedTasks}
-                </Typography>
-              </Box>
-            </StatCard>
-          </StyledCard>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <StyledCard>
-            <StatCard>
-              <Avatar
-                sx={{
-                  bgcolor: theme.palette.warning.main,
-                  color: theme.palette.warning.contrastText,
-                }}
-              >
-                <Event />
-              </Avatar>
-              <Box>
-                <Typography variant="h6">Upcoming Events</Typography>
-                <Typography variant="h4" gutterBottom>
-                  {stats.upcomingEvents}
-                </Typography>
-              </Box>
-            </StatCard>
-          </StyledCard>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <StyledCard>
-            <StatCard>
-              <Avatar
-                sx={{
-                  bgcolor: theme.palette.info.main,
-                  color: theme.palette.info.contrastText,
-                }}
-              >
-                <NoteAdd />
-              </Avatar>
-              <Box>
-                <Typography variant="h6">Notes</Typography>
-                <Typography variant="h4" gutterBottom>
-                  {stats.notes}
-                </Typography>
-              </Box>
-            </StatCard>
-          </StyledCard>
-        </Grid>
+      {/* Stat Cards */}
+      <Grid container spacing={4} sx={{ mb: 6 }}>
+        {[
+          { label: 'Total Tasks', icon: <Task />, value: stats.totalTasks, color: theme.palette.success.main },
+          { label: 'Completed Tasks', icon: <TrendingUp />, value: stats.completedTasks, color: theme.palette.primary.main },
+          { label: 'Upcoming Events', icon: <Event />, value: stats.upcomingEvents, color: theme.palette.warning.main },
+          { label: 'Notes', icon: <NoteAdd />, value: stats.notes, color: theme.palette.info.main },
+        ].map(({ label, icon, value, color }) => (
+          <Grid item xs={12} sm={6} md={3} key={label}>
+            <StyledCard>
+              <StatCard>
+                <Avatar sx={{ bgcolor: color, width: 48, height: 48, fontSize: 28 }}>
+                  {icon}
+                </Avatar>
+                <Box>
+                  <Typography variant="subtitle1">{label}</Typography>
+                  <Typography variant="h5">{value}</Typography>
+                </Box>
+              </StatCard>
+            </StyledCard>
+          </Grid>
+        ))}
       </Grid>
 
-      {/* Recent tasks */}
-      <Grid container spacing={2}>
+      {/* Main Content */}
+      <Grid container spacing={4}>
+        {/* Recent Tasks */}
         <Grid item xs={12} md={8}>
           <StyledCard>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 Recent Tasks
               </Typography>
-              {recentTasks.map((task) => (
+              {recentTasks.map(task => (
                 <Box
                   key={task.id}
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: 2,
-                    p: 2,
                     mb: 2,
+                    p: 2,
                     borderRadius: 1,
-                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
                   }}
                 >
                   <Avatar
@@ -269,9 +185,7 @@ export default function Dashboard() {
                     {task.status === 'completed' ? <Check /> : <Task />}
                   </Avatar>
                   <Box>
-                    <Typography variant="subtitle1">
-                      {task.title}
-                    </Typography>
+                    <Typography variant="subtitle1">{task.title}</Typography>
                     <Typography variant="body2" color="text.secondary">
                       {task.description}
                     </Typography>
@@ -282,14 +196,14 @@ export default function Dashboard() {
           </StyledCard>
         </Grid>
 
-        {/* Task completion chart */}
+        {/* Task Completion Chart */}
         <Grid item xs={12} md={4}>
           <StyledCard>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 Task Completion
               </Typography>
-              <Box sx={{ height: 300 }}>
+              <Box sx={{ height: 280 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={taskCompletionData}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -304,6 +218,6 @@ export default function Dashboard() {
           </StyledCard>
         </Grid>
       </Grid>
-    </Box>
+    </Container>
   );
 }

@@ -15,14 +15,13 @@ import {
   CircularProgress,
   Grid
 } from '@mui/material';
-import {
-  Add,
-  Edit,
-  Delete,
-  CheckCircle,
-  Error,
-} from '@mui/icons-material';
-import { db } from '../firebase';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+
+
 import {
   collection,
   query,
@@ -185,7 +184,7 @@ export default function Tasks() {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Button
             variant="contained"
-            startIcon={<Add />}
+            startIcon={<AddIcon />}
             onClick={() => {
               setOpenDialog(true);
               setNewTask('');
@@ -231,12 +230,12 @@ export default function Tasks() {
                         }}
                         disabled={loading}
                       >
-                        <Edit />
+                        <EditIcon />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Delete Task">
                       <IconButton onClick={() => handleDeleteTask(task.id)} disabled={loading}>
-                        <Delete />
+                        <DeleteIcon />
                       </IconButton>
                     </Tooltip>
                   </Box>
@@ -252,7 +251,7 @@ export default function Tasks() {
                   </Typography>
                   <Button
                     variant="outlined"
-                    startIcon={task.completed ? <CheckCircle /> : <Error />}
+                    startIcon={task.completed ? <CheckCircleIcon /> : <ErrorIcon />}
                     onClick={() => markTaskAsCompleted(task.id)}
                     disabled={loading}
                   >

@@ -34,15 +34,13 @@ import {
   orderBy,
   deleteDoc,
 } from 'firebase/firestore';
-import {
-  Add,
-  Close,
-  Edit,
-  Delete,
-  Event,
-  CheckCircle,
-  Error,
-} from '@mui/icons-material';
+import AddIcon from '@mui/icons-material/Add';
+import CloseIcon from '@mui/icons-material/Close';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EventIcon from '@mui/icons-material/Event';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function CalendarView({ tasks = [], setTasks }) {
@@ -268,7 +266,7 @@ export default function CalendarView({ tasks = [], setTasks }) {
               variant="contained"
               onClick={handleAddTask}
               disabled={loading || !newTask.trim()}
-              startIcon={loading ? <CircularProgress size={20} /> : <Add />}
+              startIcon={loading ? <CircularProgress size={20} /> : <AddIcon />}
             >
               {loading ? 'Adding...' : 'Add Task'}
             </Button>
@@ -315,7 +313,7 @@ export default function CalendarView({ tasks = [], setTasks }) {
                 }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Event sx={{ color: '#1976d2' }} />
+                  <EventIcon sx={{ color: '#1976d2' }} />
                   {format(day, 'MMM dd')}
                 </Box>
                 <Tooltip title="Add Task">
@@ -327,7 +325,7 @@ export default function CalendarView({ tasks = [], setTasks }) {
                       setOpenDialog(true);
                     }}
                   >
-                    <Add />
+                    <AddIcon />
                   </IconButton>
                 </Tooltip>
               </Typography>
@@ -355,7 +353,7 @@ export default function CalendarView({ tasks = [], setTasks }) {
                       }}
                       sx={{ mr: 1 }}
                     >
-                      {t.completed ? <CheckCircle color="success" /> : <Error color="error" />}
+                      {t.completed ? <CheckCircleIcon color="success" /> : <ErrorIcon color="error" />}
                     </IconButton>
                     <Typography 
                       variant="body2" 
@@ -380,7 +378,7 @@ export default function CalendarView({ tasks = [], setTasks }) {
                             });
                           }}
                         >
-                          <Edit />
+                          <EditIcon />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Delete">
@@ -391,7 +389,7 @@ export default function CalendarView({ tasks = [], setTasks }) {
                             handleDeleteTask(t.id);
                           }}
                         >
-                          <Delete color="error" />
+                          <DeleteIcon color="error" />
                         </IconButton>
                       </Tooltip>
                     </Box>
