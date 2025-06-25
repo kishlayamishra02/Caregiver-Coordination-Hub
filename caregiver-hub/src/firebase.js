@@ -3,6 +3,7 @@ import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
+// Firebase configuration
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -15,7 +16,8 @@ const firebaseConfig = {
 
 // Validate Firebase configuration
 if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-  throw new Error('Firebase configuration is missing. Please check your .env file');
+  console.error('Firebase configuration is missing. Please check your environment variables.');
+  throw new Error('Firebase configuration is missing');
 }
 
 const app = initializeApp(firebaseConfig);
@@ -23,12 +25,12 @@ const messaging = getMessaging(app);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-export { messaging, getToken, onMessage, db, auth };
-export default app;
-
-console.log("🔥 Firebase config:", firebaseConfig);
-
-// Add initialization check
-export const isFirebaseInitialized = () => {
+// Check if Firebase is properly initialized
+const isFirebaseInitialized = () => {
   return !!auth && !!db;
 };
+
+export { messaging, getToken, onMessage, db, auth, isFirebaseInitialized };
+export default app;
+
+console.log("Firebase config:", firebaseConfig);
