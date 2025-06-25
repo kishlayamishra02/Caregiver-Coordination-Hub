@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
@@ -19,13 +20,28 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.name.trim() || !formData.email.trim() || !formData.password.trim()) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
     try {
-      setLoading(true);
-      setError('');
+      console.log('Attempting registration with:', formData.email);
       await register(formData.email, formData.password, formData.name);
-      navigate('/dashboard'); // Redirect to dashboard after successful registration
+      console.log('Registration successful, redirecting to dashboard');
+      navigate('/dashboard');
     } catch (err) {
-      setError(err.message);
+      console.error('Registration error:', err);
+      setError(err.message || 'Failed to register. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -40,17 +56,24 @@ export default function Register() {
 
   return (
     <Box maxWidth={360} mx="auto" mt={8}>
-      <Typography variant="h5" gutterBottom>Register</Typography>
-      {error && <Typography color="error" gutterBottom>{error}</Typography>}
+      <Typography variant="h5" gutterBottom>
+        Register
+      </Typography>
+      {error && (
+        <Typography color="error" variant="body2" sx={{ mb: 2 }}>
+          {error}
+        </Typography>
+      )}
       <form onSubmit={handleSubmit}>
         <TextField 
           fullWidth 
-          label="Name" 
+          label="Full Name" 
           margin="normal" 
           name="name"
           value={formData.name}
           onChange={handleChange}
           required
+          disabled={loading}
         />
         <TextField 
           fullWidth 
@@ -61,6 +84,7 @@ export default function Register() {
           onChange={handleChange}
           type="email"
           required
+          disabled={loading}
         />
         <TextField 
           fullWidth 
@@ -71,21 +95,30 @@ export default function Register() {
           onChange={handleChange}
           type="password"
           required
+          disabled={loading}
         />
         <Button 
           fullWidth 
           variant="contained" 
           sx={{ mt: 2 }}
           type="submit"
-          disabled={loading}
+          disabled={loading || !formData.name.trim() || !formData.email.trim() || !formData.password.trim()}
         >
-          {loading ? 'Creating Account...' : 'Sign Up'}
+          {loading ? (
+            <>
+              <CircularProgress size={20} sx={{ mr: 1 }} />
+              Creating Account...
+            </>
+          ) : (
+            'Sign Up'
+          )}
         </Button>
       </form>
-      <Box mt={2}>
-        <Link to="/login">Already have an account? Login</Link>
+      <Box mt={2} textAlign="center">
+        <Link to="/login" style={{ textDecoration: 'none' }}>
+          Already have an account? Login
+        </Link>
       </Box>
     </Box>
   );
 }
-

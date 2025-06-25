@@ -3,6 +3,7 @@ import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -17,7 +18,7 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!email || !password) {
+    if (!email.trim() || !password.trim()) {
       setError('Please fill in all fields');
       return;
     }
@@ -32,7 +33,7 @@ export default function Login() {
       navigate('/dashboard');
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.message);
+      setError(err.message || 'Failed to login. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -40,7 +41,9 @@ export default function Login() {
 
   return (
     <Box maxWidth={360} mx="auto" mt={8} component="form" onSubmit={handleSubmit}>
-      <Typography variant="h5" gutterBottom>Login</Typography>
+      <Typography variant="h5" gutterBottom>
+        Login
+      </Typography>
       {error && (
         <Typography color="error" variant="body2" sx={{ mb: 2 }}>
           {error}
@@ -71,9 +74,16 @@ export default function Login() {
         variant="contained" 
         sx={{ mt: 2 }} 
         type="submit"
-        disabled={loading}
+        disabled={loading || !email.trim() || !password.trim()}
       >
-        {loading ? 'Signing in...' : 'Sign In'}
+        {loading ? (
+          <>
+            <CircularProgress size={20} sx={{ mr: 1 }} />
+            Signing in...
+          </>
+        ) : (
+          'Sign In'
+        )}
       </Button>
       <Box mt={2} textAlign="center">
         <Link to="/register" style={{ textDecoration: 'none' }}>

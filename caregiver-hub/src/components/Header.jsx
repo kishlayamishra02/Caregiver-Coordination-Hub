@@ -13,6 +13,11 @@ import {
   useTheme,
   useMediaQuery,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -22,22 +27,29 @@ import {
   Settings,
   Help,
   Logout,
+  Person,
+  Info,
+  BugReport,
+  Support,
 } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { useThemeContext } from '../contexts/ThemeContext';
 
 export default function Header({ open, setOpen }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { darkMode, toggleTheme } = useThemeContext();
   const [anchorEl, setAnchorEl] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [helpDialogOpen, setHelpDialogOpen] = useState(false);
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -47,35 +59,50 @@ export default function Header({ open, setOpen }) {
     setAnchorEl(null);
   };
 
-  const handleSignOut = async () => {
-    try {
-      setLoading(true);
-      await signOut();
-      navigate('/login');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    } finally {
-      setLoading(false);
-    }
+  const handleThemeToggle = () => {
+    toggleTheme();
+  };
+
+  // Profile page route
+  const handleProfile = () => {
+    handleClose();
+    navigate('/dashboard/profile');
+  };
+
+  // Settings page route
+  const handleSettings = () => {
+    handleClose();
+    navigate('/dashboard/settings');
+  };
+
+  // Help dialog
+  const handleHelp = () => {
+    handleClose();
+    setHelpDialogOpen(true);
+  };
+
+  const handleHelpClose = () => {
+    setHelpDialogOpen(false);
   };
 
   // Fetch notifications
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
+        // Create a compound index for userId and createdAt
         const q = query(
           collection(db, 'notifications'),
           where('userId', '==', user?.uid),
-          where('read', '==', false),
-          orderBy('createdAt', 'desc')
+          orderBy('createdAt', 'desc'),
+          limit(10) // Limit the number of notifications fetched
         );
         const querySnapshot = await getDocs(q);
-        const unreadNotifications = querySnapshot.docs.map(doc => ({
+        const notifications = querySnapshot.docs.map(doc => ({
           ...doc.data(),
           id: doc.id
         }));
-        setNotifications(unreadNotifications);
-        setUnreadCount(unreadNotifications.length);
+        setNotifications(notifications);
+        setUnreadCount(notifications.filter(n => !n.read).length);
       } catch (error) {
         console.error('Error fetching notifications:', error);
       }
@@ -135,19 +162,21 @@ export default function Header({ open, setOpen }) {
           </Tooltip>
 
           <Tooltip title="Theme">
-            <IconButton color="inherit" size="large">
-              {theme.palette.mode === 'dark' ? <LightMode /> : <DarkMode />}
-            </IconButton>
-          </Tooltip>
-
-          <Tooltip title="Settings">
-            <IconButton color="inherit" size="large">
-              <Settings />
+            <IconButton 
+              color="inherit" 
+              size="large"
+              onClick={handleThemeToggle}
+            >
+              {darkMode ? <LightMode /> : <DarkMode />}
             </IconButton>
           </Tooltip>
 
           <Tooltip title="Help">
-            <IconButton color="inherit" size="large">
+            <IconButton 
+              color="inherit" 
+              size="large"
+              onClick={handleHelp}
+            >
               <Help />
             </IconButton>
           </Tooltip>
@@ -181,30 +210,78 @@ export default function Header({ open, setOpen }) {
               }}
               open={Boolean(anchorEl)}
               onClose={handleClose}
+              sx={{
+                '& .MuiMenuItem-root': {
+                  minWidth: 160,
+                  '&:hover': {
+                    backgroundColor: 'primary.main',
+                    color: 'white',
+                  },
+                },
+              }}
             >
-              <MenuItem onClick={handleClose}>
+              <MenuItem onClick={handleProfile}>
+                <Person sx={{ mr: 1 }} />
                 <Typography textAlign="center">Profile</Typography>
               </MenuItem>
-              <MenuItem onClick={handleClose}>
+              <MenuItem onClick={handleSettings}>
+                <Settings sx={{ mr: 1 }} />
                 <Typography textAlign="center">Settings</Typography>
               </MenuItem>
-              <MenuItem onClick={handleClose}>
+              <MenuItem onClick={handleHelp}>
+                <Help sx={{ mr: 1 }} />
                 <Typography textAlign="center">Help</Typography>
-              </MenuItem>
-              <MenuItem onClick={handleSignOut} disabled={loading}>
-                {loading ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CircularProgress size={20} />
-                    <Typography>Signing out...</Typography>
-                  </Box>
-                ) : (
-                  <Typography textAlign="center">Sign Out</Typography>
-                )}
               </MenuItem>
             </Menu>
           </Box>
         </Box>
       </Toolbar>
+      <Dialog
+        open={helpDialogOpen}
+        onClose={handleHelpClose}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Need Help?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Getting Started
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Caregiver Hub is your one-stop platform for managing caregiving tasks, scheduling, and communication.
+              </Typography>
+            </Box>
+
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Features
+              </Typography>
+              <ul>
+                <li>Task Management</li>
+                <li>Calendar Scheduling</li>
+                <li>Family Notes</li>
+                <li>Real-time Notifications</li>
+              </ul>
+            </Box>
+
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Support
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                For technical issues or feedback, please contact our support team.
+              </Typography>
+            </Box>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleHelpClose} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </AppBar>
   );
-}
+};

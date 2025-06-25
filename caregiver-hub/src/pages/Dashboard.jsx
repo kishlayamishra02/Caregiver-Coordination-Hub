@@ -131,12 +131,27 @@ export default function Dashboard() {
 
       {/* Stat Cards */}
       <Grid container spacing={4} sx={{ mb: 6 }}>
-        {[
-          { label: 'Total Tasks', icon: <Task />, value: stats.totalTasks, color: theme.palette.success.main },
-          { label: 'Completed Tasks', icon: <TrendingUp />, value: stats.completedTasks, color: theme.palette.primary.main },
-          { label: 'Upcoming Events', icon: <Event />, value: stats.upcomingEvents, color: theme.palette.warning.main },
-          { label: 'Notes', icon: <NoteAdd />, value: stats.notes, color: theme.palette.info.main },
-        ].map(({ label, icon, value, color }) => (
+        {[{
+          label: 'Total Tasks',
+          icon: <Task />,
+          value: stats.totalTasks,
+          color: theme.palette.success.main
+        }, {
+          label: 'Completed Tasks',
+          icon: <TrendingUp />,
+          value: stats.completedTasks,
+          color: theme.palette.primary.main
+        }, {
+          label: 'Upcoming Events',
+          icon: <Event />,
+          value: stats.upcomingEvents,
+          color: theme.palette.warning.main
+        }, {
+          label: 'Notes',
+          icon: <NoteAdd />,
+          value: stats.notes,
+          color: theme.palette.info.main
+        }].map(({ label, icon, value, color }) => (
           <Grid item xs={12} sm={6} md={3} key={label}>
             <StyledCard>
               <StatCard>
