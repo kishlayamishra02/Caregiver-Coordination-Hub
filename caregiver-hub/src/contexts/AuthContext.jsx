@@ -6,6 +6,30 @@ import { db } from '../firebase';
 
 const auth = getAuth();
 
+// Function to translate Firebase error codes to user-friendly messages
+const getErrorMessage = (error) => {
+  if (!error.code) return 'An unknown error occurred';
+
+  const errorCode = error.code;
+  const message = error.message;
+
+  // Firebase auth error codes
+  switch (errorCode) {
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/wrong-password':
+      return 'Incorrect password.';
+    case 'auth/user-not-found':
+      return 'No user found with this email address.';
+    case 'auth/email-already-in-use':
+      return 'This email address is already in use.';
+    case 'auth/weak-password':
+      return 'Password must be at least 6 characters long.';
+    default:
+      return message;
+  }
+};
+
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
@@ -101,31 +125,6 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-};
-
-// Helper function to get user-friendly error messages
-const getErrorMessage = (error) => {
-  console.error('Firebase error code:', error.code);
-
-  switch (error.code) {
-    case 'auth/email-already-in-use':
-      return 'This email is already registered.';
-    case 'auth/invalid-email':
-      return 'Please enter a valid email address.';
-    case 'auth/operation-not-allowed':
-      return 'Email/password accounts are not enabled. Please check Firebase Console settings.';
-    case 'auth/weak-password':
-      return 'Password should be at least 6 characters.';
-    case 'auth/user-not-found':
-      return 'No user found with this email.';
-    case 'auth/wrong-password':
-      return 'Incorrect password.';
-    case 'auth/invalid-credential':
-      return 'Invalid email or password. Please try again.';
-    default:
-      console.error('Unknown error:', error.message);
-      return 'An error occurred. Please try again.';
-  }
 };
 
 export const useAuth = () => {

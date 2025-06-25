@@ -13,6 +13,11 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
+// Validate Firebase configuration
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+  throw new Error('Firebase configuration is missing. Please check your .env file');
+}
+
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 const db = getFirestore(app);
@@ -22,3 +27,8 @@ export { messaging, getToken, onMessage, db, auth };
 export default app;
 
 console.log("🔥 Firebase config:", firebaseConfig);
+
+// Add initialization check
+export const isFirebaseInitialized = () => {
+  return !!auth && !!db;
+};
