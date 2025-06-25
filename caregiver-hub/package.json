@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "cd caregiver-hub && npm run build",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
