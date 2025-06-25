@@ -4,13 +4,3 @@ import App from './App';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
-
-// Only register service worker in production
-if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-    scope: '/',
-    updateViaCache: 'none'
-  }).catch(error => {
-    console.warn('Service worker registration failed:', error);
-  });
-}

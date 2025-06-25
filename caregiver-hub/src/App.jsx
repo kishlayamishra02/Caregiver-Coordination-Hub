@@ -34,33 +34,37 @@ const ProtectedRoute = ({ children }) => {
 
 export default function App() {
   useEffect(() => {
-    // Initialize Firebase messaging
-    navigator.serviceWorker
-      .register('/firebase-messaging-sw.js', {
-        scope: '/',
-        updateViaCache: 'none'
-      })
-      .then((registration) => {
-        console.log("✅ Service worker registered");
-
-        // Ask for notification permission
-        Notification.requestPermission().then((permission) => {
-          if (permission === "granted") {
-            getToken(messaging, {
-              vapidKey: import.meta.env.VITE_VAPID_KEY,
-              serviceWorkerRegistration: registration,
-            }).then((currentToken) => {
-              if (currentToken) {
-                console.log("✅ FCM Token:", currentToken);
-              } else {
-                console.warn("⚠️ No registration token available.");
-              }
-            }).catch((err) => {
-              console.error("❌ An error occurred while retrieving token. ", err);
-            });
-          }
+    // Only register service worker in production
+    if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('/firebase-messaging-sw.js')
+        .then((registration) => {
+          console.log("✅ Service worker registered");
+          
+          // Ask for notification permission
+          Notification.requestPermission().then((permission) => {
+            if (permission === "granted") {
+              getToken(messaging, {
+                vapidKey: process.env.VITE_VAPID_KEY || import.meta.env.VITE_VAPID_KEY,
+                serviceWorkerRegistration: registration,
+              })
+                .then((currentToken) => {
+                  if (currentToken) {
+                    console.log('Successfully got the token:', currentToken);
+                  } else {
+                    console.log('No registration token available. Request permission to generate one.');
+                  }
+                })
+                .catch((err) => {
+                  console.log('An error occurred while retrieving token. ', err);
+                });
+            }
+          });
+        })
+        .catch((err) => {
+          console.log('Service worker registration failed:', err);
         });
-      });
+    }
   }, []);
 
   return (
