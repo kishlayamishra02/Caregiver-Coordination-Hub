@@ -1,7 +1,7 @@
 [build]
-  base = "/caregiver-hub"
+  base = "/"
   command = "npm run build"
-  publish = "/caregiver-hub/dist"
+  publish = "dist"
 
 [build.environment]
   VITE_FIREBASE_API_KEY = "${FIREBASE_API_KEY}"
