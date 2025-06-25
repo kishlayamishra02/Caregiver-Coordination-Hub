@@ -14,9 +14,8 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'dist',
+    outDir: './dist',
     assetsDir: 'assets',
-    sourcemap: true,
     emptyOutDir: true,
     rollupOptions: {
       input: {
