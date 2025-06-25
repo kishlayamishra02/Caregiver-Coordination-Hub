@@ -81,7 +81,6 @@ caregiver-backend/functions/credentials.json
 *.local
 
 # Vite-specific files:
-dist/
 build/
 .cache/
 node_modules/.cache

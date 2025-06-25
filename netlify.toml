@@ -1,5 +1,5 @@
 [build]
-base = "caregiver-backend/caregiver-hub"
+base = "caregiver-hub"
 command = "npm install && npm run build"
 publish = "dist"
 
