@@ -13,6 +13,7 @@ publish = "dist"
   VITE_VAPID_KEY = "${VAPID_KEY}"
   VITE_BACKEND_URL = "${BACKEND_URL}"
   VITE_FRONTEND_URL = "https://caregiverhub.netlify.app"
+  NODE_VERSION = "18.19.0"  # Using LTS version of Node.js
 
 [[redirects]]
   from = "/*"
