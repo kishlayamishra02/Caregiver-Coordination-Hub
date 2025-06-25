@@ -34,8 +34,8 @@ const ProtectedRoute = ({ children }) => {
 
 export default function App() {
   useEffect(() => {
-    // Only register service worker in production
-    if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
+    // Register service worker regardless of environment
+    if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/firebase-messaging-sw.js')
         .then((registration) => {
@@ -45,24 +45,24 @@ export default function App() {
           Notification.requestPermission().then((permission) => {
             if (permission === "granted") {
               getToken(messaging, {
-                vapidKey: process.env.VITE_VAPID_KEY || import.meta.env.VITE_VAPID_KEY,
+                vapidKey: import.meta.env.VITE_VAPID_KEY,
                 serviceWorkerRegistration: registration,
               })
                 .then((currentToken) => {
                   if (currentToken) {
-                    console.log('Successfully got the token:', currentToken);
+                    console.log('✅ Current token: ', currentToken);
                   } else {
-                    console.log('No registration token available. Request permission to generate one.');
+                    console.log('❌ No registration token available');
                   }
                 })
                 .catch((err) => {
-                  console.log('An error occurred while retrieving token. ', err);
+                  console.log('❌ An error occurred while retrieving token. ', err);
                 });
             }
           });
         })
         .catch((err) => {
-          console.log('Service worker registration failed:', err);
+          console.log('❌ Service worker registration failed:', err);
         });
     }
   }, []);
@@ -74,15 +74,21 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<Dashboard />} />
               <Route path="calendar" element={<Calendar />} />
               <Route path="notes" element={<Notes />} />
               <Route path="tasks" element={<Tasks />} />
-              <Route path="signout" element={<SignOut />} />
               <Route path="profile" element={<Profile />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="signout" element={<SignOut />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
