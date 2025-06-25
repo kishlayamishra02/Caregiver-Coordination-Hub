@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import Tasks from './pages/Tasks';
 import NotFound from './pages/NotFound';
 import Register from './pages/Register';
+import SignOut from './pages/SignOut';
 import { AuthProvider, AuthContext } from './contexts/AuthContext';
 import { messaging } from './firebase';
 
@@ -69,6 +70,7 @@ export default function App() {
             <Route path="calendar" element={<Calendar />} />
             <Route path="notes" element={<Notes />} />
             <Route path="tasks" element={<Tasks />} />
+            <Route path="signout" element={<SignOut />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

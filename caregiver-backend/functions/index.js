@@ -7,6 +7,14 @@ if (process.env.FUNCTIONS_EMULATOR) {
 }
 const db = admin.firestore();
 
+function validateFields(obj, requiredFields) {
+  const missing = requiredFields.filter(field => !(field in obj));
+  if (missing.length > 0) {
+    throw new Error('Missing fields: ' + missing.join(', '));
+  }
+}
+
+
 // ---------------------- GOOGLE CALENDAR UTILS ------------------------ //
 
 const { getAuthUrl, oAuth2Client } = require('./calendarAuth');
@@ -23,14 +31,16 @@ async function getAuthorizedClient(userId) {
 // ---------------------- TASK FUNCTIONS ------------------------ //
 
 exports.createTask = functions.https.onRequest(async (req, res) => {
-  const { title, due, assignedTo, status = 'pending', notes = '' } = req.body;
   try {
-    const newTask = { title, due, assignedTo, status, notes };
+    const { title, due, assignedTo, status = 'pending', notes = '' } = req.body;
 
-    // Save to Firestore
+    // 🔍 Validate required fields
+    validateFields(req.body, ['title', 'due', 'assignedTo']);
+
+    const newTask = { title, due, assignedTo, status, notes };
     const docRef = await db.collection('tasks').add(newTask);
 
-    // Create Calendar Event
+    // 🔐 Google Calendar requires OAuth token (frontend must handle auth)
     const calendar = await getAuthorizedClient(assignedTo);
     const event = await calendar.events.insert({
       calendarId: 'primary',
@@ -49,24 +59,25 @@ exports.createTask = functions.https.onRequest(async (req, res) => {
       },
     });
 
-    // Save eventId in task
     await docRef.update({ eventId: event.data.id });
+    res.status(201).send({ message: 'Task and calendar event created', taskId: docRef.id });
 
-    res.status(201).send({ message: 'Task and calendar event created with reminders', taskId: docRef.id });
   } catch (err) {
-    console.error(err);
-    res.status(500).send(err.message);
+    console.error('createTask error:', err.message);
+    res.status(400).send(err.message); // ⛑ Send validation or calendar error
   }
 });
 
 
-exports.getTasks = functions.https.onRequest(async (req, res) => {
+
+eexports.getTasks = functions.https.onRequest(async (req, res) => {
   const { assignedTo } = req.query;
   try {
     let query = db.collection('tasks');
     if (assignedTo) {
       query = query.where('assignedTo', '==', assignedTo);
     }
+
     const snapshot = await query.get();
     const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     res.send(tasks);
@@ -75,18 +86,20 @@ exports.getTasks = functions.https.onRequest(async (req, res) => {
   }
 });
 
+
 exports.updateTask = functions.https.onRequest(async (req, res) => {
-  const { taskId, updates } = req.body;
-  if (!taskId || !updates) return res.status(400).send('Missing taskId or updates');
   try {
+    validateFields(req.body, ['taskId', 'updates']);
+
+    const { taskId, updates } = req.body;
     const taskRef = db.collection('tasks').doc(taskId);
     const doc = await taskRef.get();
+
     if (!doc.exists) return res.status(404).send('Task not found');
     const task = doc.data();
 
     await taskRef.update(updates);
 
-    // Update calendar event if present
     if (task.eventId) {
       const calendar = await getAuthorizedClient(task.assignedTo);
       await calendar.events.patch({
@@ -102,10 +115,13 @@ exports.updateTask = functions.https.onRequest(async (req, res) => {
     }
 
     res.send({ message: 'Task and calendar event updated' });
+
   } catch (err) {
-    res.status(500).send(err.message);
+    console.error('updateTask error:', err.message);
+    res.status(400).send(err.message);
   }
 });
+
 
 exports.deleteTask = functions.https.onRequest(async (req, res) => {
   const { taskId } = req.body;
@@ -160,20 +176,24 @@ exports.getFamily = functions.https.onRequest(async (req, res) => {
   }
 });
 
-exports.addFamilyMember = functions.https.onRequest(async (req, res) => {
-  const { familyId, userId } = req.body;
-  if (!familyId || !userId) return res.status(400).send('Missing familyId or userId');
-
+eexports.addFamilyMember = functions.https.onRequest(async (req, res) => {
   try {
+    validateFields(req.body, ['familyId', 'userId']);
+    const { familyId, userId } = req.body;
+
     const familyRef = db.collection('families').doc(familyId);
     await familyRef.update({
       members: admin.firestore.FieldValue.arrayUnion(userId),
     });
+
     res.send({ message: 'Member added to family' });
+
   } catch (err) {
-    res.status(500).send(err.message);
+    console.error('addFamilyMember error:', err.message);
+    res.status(400).send(err.message);
   }
 });
+
 
 exports.removeFamilyMember = functions.https.onRequest(async (req, res) => {
   const { familyId, userId } = req.body;
@@ -205,7 +225,7 @@ exports.oauthCallback = functions.https.onRequest(async (req, res) => {
     const { tokens } = await oAuth2Client.getToken(code);
     oAuth2Client.setCredentials(tokens);
 
-    const userId = 'demo-user-id'; // 🔁 Replace this with Firebase Auth user ID in real use
+    const userId = 'demo-user-id'; // 🔁 Replace with real Firebase Auth UID
 
     await db.collection('calendarTokens').doc(userId).set({
       tokens,
@@ -214,10 +234,11 @@ exports.oauthCallback = functions.https.onRequest(async (req, res) => {
 
     res.send('Google Calendar authorization successful. You can close this tab.');
   } catch (err) {
-    console.error('OAuth error:', err);
-    res.status(500).send('Error exchanging code: ' + err.message);
+    console.error('OAuth callback failed:', err.message);
+    res.status(500).send('OAuth Error: ' + err.message);
   }
 });
+
 
 exports.syncCalendarToFirestore = functions.https.onRequest(async (req, res) => {
   const { userId } = req.query;
@@ -334,3 +355,119 @@ exports.getDashboardItems = functions.https.onRequest(async (req, res) => {
     res.status(500).send(err.message);
   }
 });
+
+
+// ---------------------- TASK REMINDER SCHEDULER ------------------------ //
+
+exports.sendTaskReminders = functions.pubsub.schedule('every 60 minutes').onRun(async (context) => {
+  const now = new Date();
+  const upcoming = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour ahead
+
+  // Format as YYYY-MM-DD to match how due dates are stored
+  const today = now.toISOString().split('T')[0];
+  const soon = upcoming.toISOString().split('T')[0];
+
+  try {
+    const snapshot = await db.collection('tasks')
+      .where('due', '>=', today)
+      .where('due', '<=', soon)
+      .get();
+
+    for (const doc of snapshot.docs) {
+      const task = doc.data();
+      const { title, due, notes, assignedTo } = task;
+
+      // 🔄 FRONTEND SHOULD:
+      // - Use Firebase Messaging to get FCM token on login/init
+      // - Then call backend API to save it to: db.collection('fcmTokens').doc(userId).set({ token })
+      const tokenDoc = await db.collection('fcmTokens').doc(assignedTo).get();
+      if (!tokenDoc.exists || !tokenDoc.data().token) continue;
+
+      const payload = {
+        notification: {
+          title: `⏰ Reminder: ${title}`,
+          body: `Due on ${due}${notes ? ` — ${notes}` : ''}`
+        },
+        token: tokenDoc.data().token
+      };
+
+      try {
+        await messaging.send(payload);
+        console.log(`Reminder sent to ${assignedTo} for task: ${title}`);
+      } catch (err) {
+        console.error(`Failed to send reminder for "${title}":`, err.message);
+      }
+    }
+  } catch (err) {
+    console.error(' Task reminder scan failed:', err.message);
+  }
+
+  return null;
+});
+
+async function addNote(familyId, content, createdBy) {
+  await db.collection('families').doc(familyId)
+    .collection('notes').add({
+      content,
+      createdBy,
+      timestamp: new Date()
+    });
+}
+
+async function addMessage(familyId, text, senderId) {
+  await db.collection('families').doc(familyId)
+    .collection('messages').add({
+      text,
+      senderId,
+      timestamp: new Date()
+    });
+}
+
+exports.sendMessage = functions.https.onRequest(async (req, res) => {
+  try {
+    const { familyId, senderId, text } = req.body;
+
+    if (!familyId || !senderId || !text) {
+      return res.status(400).send({ error: "Missing required fields" });
+    }
+
+    await db.collection("families").doc(familyId)
+      .collection("messages").add({
+        senderId,
+        text,
+        timestamp: new Date()
+      });
+
+    res.status(200).send({ message: "Message sent" });
+  } catch (err) {
+    console.error("Error sending message:", err);
+    res.status(500).send({ error: "Internal Server Error" });
+  }
+});
+
+
+exports.getMessages = functions.https.onRequest(async (req, res) => {
+  try {
+    const familyId = req.query.familyId;
+    if (!familyId) {
+      return res.status(400).send({ error: "Missing familyId" });
+    }
+
+    const snapshot = await db.collection("families").doc(familyId)
+      .collection("messages")
+      .orderBy("timestamp", "desc")
+      .limit(50)
+      .get();
+
+    const messages = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    res.status(200).send(messages);
+  } catch (err) {
+    console.error("Error getting messages:", err);
+    res.status(500).send({ error: "Internal Server Error" });
+  }
+});
+

@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       console.log('Attempting login with:', email);
-      
+
       if (!auth) {
         throw new Error('Firebase authentication not initialized');
       }
@@ -44,27 +44,28 @@ export const AuthProvider = ({ children }) => {
   const register = async (email, password, name) => {
     try {
       console.log('Attempting registration with:', email);
-      
+
       if (!auth) {
         throw new Error('Firebase authentication not initialized');
       }
 
+      // Create user in Firebase Auth
       const result = await createUserWithEmailAndPassword(auth, email, password);
       console.log('Registration successful:', result.user);
-      
-      // Update Firebase Auth profile
+
+      // Update user's display name
       await updateProfile(result.user, {
         displayName: name
       });
 
-      // Save to Firestore
+      // Save user data to Firestore
       await setDoc(doc(db, "users", result.user.uid), {
         name,
         email,
-        createdAt: new Date()
+        createdAt: new Date(),
+        lastLogin: new Date()
       });
 
-      console.log('User data saved to Firestore');
       return result.user;
     } catch (error) {
       console.error('Registration error:', error);
@@ -105,7 +106,7 @@ export const AuthProvider = ({ children }) => {
 // Helper function to get user-friendly error messages
 const getErrorMessage = (error) => {
   console.error('Firebase error code:', error.code);
-  
+
   switch (error.code) {
     case 'auth/email-already-in-use':
       return 'This email is already registered.';

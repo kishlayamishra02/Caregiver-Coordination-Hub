@@ -17,8 +17,10 @@ import {
   Checklist,
   Note,
   ChevronLeft as ChevronLeftIcon,
+  Logout as LogoutIcon,
 } from '@mui/icons-material';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const drawerWidth = 220;
 
@@ -31,6 +33,17 @@ const items = [
 
 export default function Sidebar({ open, setOpen }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleSignOut = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  };
 
   return (
     <Drawer
@@ -98,14 +111,46 @@ export default function Sidebar({ open, setOpen }) {
                 <ListItemText 
                   primary={item.text} 
                   sx={{
-                    color: 'inherit',
-                    opacity: location.pathname === item.path ? 1 : 0.9,
+                    color: '#fff',
+                    fontWeight: location.pathname === item.path ? 600 : 400,
                   }}
                 />
               </ListItem>
             </Tooltip>
           ))}
         </List>
+
+        <Divider sx={{ borderColor: 'rgba(255,255,255,0.2)', mt: 2 }} />
+
+        <Box sx={{ p: 1 }}>
+          <Tooltip title="Sign Out" placement="right">
+            <ListItem
+              onClick={handleSignOut}
+              sx={{
+                color: '#fff',
+                background: 'rgba(255,255,255,0.15)',
+                borderRadius: 2,
+                mx: 1,
+                my: 0.5,
+                '&:hover': {
+                  background: 'rgba(255,255,255,0.2)',
+                },
+                transition: 'background-color 0.2s ease-in-out',
+              }}
+            >
+              <ListItemIcon sx={{ color: '#fff', minWidth: 32 }}>
+                <LogoutIcon />
+              </ListItemIcon>
+              <ListItemText 
+                primary="Sign Out" 
+                sx={{
+                  color: '#fff',
+                  fontWeight: 400,
+                }}
+              />
+            </ListItem>
+          </Tooltip>
+        </Box>
       </Box>
     </Drawer>
   );

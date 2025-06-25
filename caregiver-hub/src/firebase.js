@@ -20,3 +20,5 @@ const auth = getAuth(app);
 
 export { messaging, getToken, onMessage, db, auth };
 export default app;
+
+console.log("🔥 Firebase config:", firebaseConfig);
