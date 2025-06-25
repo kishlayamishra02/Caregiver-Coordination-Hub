@@ -30,7 +30,7 @@ export default function Login() {
       console.log('Attempting login with email:', email);
       await login(email, password);
       console.log('Login successful, redirecting to dashboard');
-      navigate('/dashboard');
+      navigate('/');
     } catch (err) {
       console.error('Login error:', err);
       setError(err.message || 'Failed to login. Please check your credentials.');
