@@ -26,9 +26,9 @@ const drawerWidth = 220;
 
 const items = [
   { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
-  { text: 'Calendar', icon: <CalendarToday />, path: '/dashboard/calendar' },
-  { text: 'Tasks', icon: <Checklist />, path: '/dashboard/tasks' },
-  { text: 'Notes', icon: <Note />, path: '/dashboard/notes' },
+  { text: 'Calendar', icon: <CalendarToday />, path: 'calendar' },
+  { text: 'Tasks', icon: <Checklist />, path: 'tasks' },
+  { text: 'Notes', icon: <Note />, path: 'notes' },
 ];
 
 export default function Sidebar({ open, setOpen }) {
