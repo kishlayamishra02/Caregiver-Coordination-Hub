@@ -80,9 +80,9 @@ export const AuthProvider = ({ children }) => {
         name,
         email,
         createdAt: new Date(),
-        lastLogin: new Date()
-      });
-  
+        lastLogin: new Date(),
+      }, { merge: true });
+      
       return result.user;
     } catch (error) {
       console.error("🔥 Registration crash:", error.code, error.message);
