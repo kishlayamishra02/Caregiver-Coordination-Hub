@@ -46,10 +46,25 @@ export default function Tasks() {
   const { user } = useAuth();
 
   useEffect(() => {
+    if (!db) {
+      setError('Firebase not initialized properly');
+      return;
+    }
+
+    if (!user) {
+      setError('Please login to view tasks');
+      return;
+    }
+
     fetchTasks();
-  }, [user]);
+  }, [user, db]);
 
   const fetchTasks = async () => {
+    if (!db || !user) {
+      setError('Firebase not initialized or user not authenticated');
+      return;
+    }
+
     try {
       const q = query(
         collection(db, 'tasks'),
