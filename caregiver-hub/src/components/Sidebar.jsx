@@ -25,7 +25,7 @@ import { useAuth } from '../contexts/AuthContext';
 const drawerWidth = 220;
 
 const items = [
-  { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
+  { text: 'Dashboard', icon: <Dashboard />, path: '/' },
   { text: 'Calendar', icon: <CalendarToday />, path: 'calendar' },
   { text: 'Tasks', icon: <Checklist />, path: 'tasks' },
   { text: 'Notes', icon: <Note />, path: 'notes' },
