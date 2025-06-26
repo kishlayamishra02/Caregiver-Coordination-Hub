@@ -1,0 +1,7 @@
+{
+  "name": "caregiver-backend",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd caregiver-hub && npm run build"
+  }
+}
