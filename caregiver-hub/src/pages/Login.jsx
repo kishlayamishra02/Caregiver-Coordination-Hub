@@ -4,7 +4,7 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
@@ -14,6 +14,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const successMessage = location.state?.successMessage;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -44,6 +46,11 @@ export default function Login() {
       <Typography variant="h5" gutterBottom>
         Login
       </Typography>
+      {successMessage && (
+        <Typography color="success" variant="body2" sx={{ mb: 2 }}>
+          {successMessage}
+        </Typography>
+      )}
       {error && (
         <Typography color="error" variant="body2" sx={{ mb: 2 }}>
           {error}

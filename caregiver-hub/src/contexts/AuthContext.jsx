@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (email, password, name) => {
+  const register = async (email, password, name, navigate) => {
     try {
       console.log("🔐 Creating user with email and password...");
       const result = await createUserWithEmailAndPassword(auth, email, password);
@@ -77,20 +77,30 @@ export const AuthProvider = ({ children }) => {
       console.log("👤 Updating user profile with displayName:", name);
       await updateProfile(result.user, { displayName: name });
   
-      console.log("📝 Writing user data to Firestore...");
-      await setDoc(
-        doc(db, "users", result.user.uid),
-        {
-          name,
-          email,
-          createdAt: new Date(),
-          lastLogin: new Date(),
-        },
-        { merge: true }
-      );
+      try {
+        console.log("📝 Writing user data to Firestore...");
+        await setDoc(
+          doc(db, "users", result.user.uid),
+          {
+            name,
+            email,
+            createdAt: new Date(),
+            lastLogin: new Date(),
+          },
+          { merge: true }
+        );
+      } catch (firestoreError) {
+        // If Firestore fails, we still want to redirect to login
+        console.error(" Firestore error (but registration successful):", firestoreError);
+      }
   
       console.log("✅ Registration successful for:", email);
-      return result.user;
+      // Redirect to login page with success message
+      navigate('/login', { 
+        state: { 
+          successMessage: "Registration successful! Please log in with your credentials." 
+        }
+      });
     } catch (error) {
       console.error("🔥 Registration crash:", error.code, error.message);
       throw new Error(getErrorMessage(error));

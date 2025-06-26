@@ -36,9 +36,8 @@ export default function Register() {
 
     try {
       console.log('Attempting registration with:', formData.email);
-      await register(formData.email, formData.password, formData.name);
-      console.log('Registration successful, redirecting to dashboard');
-      navigate('/dashboard');
+      await register(formData.email, formData.password, formData.name, navigate);
+      // Registration will now handle the redirect to login page
     } catch (err) {
       console.error('Registration error:', err);
       setError(err.message || 'Failed to register. Please try again.');
@@ -55,7 +54,7 @@ export default function Register() {
   };
 
   return (
-    <Box maxWidth={360} mx="auto" mt={8}>
+    <Box maxWidth={360} mx="auto" mt={8} component="form" onSubmit={handleSubmit}>
       <Typography variant="h5" gutterBottom>
         Register
       </Typography>
@@ -64,56 +63,54 @@ export default function Register() {
           {error}
         </Typography>
       )}
-      <form onSubmit={handleSubmit}>
-        <TextField 
-          fullWidth 
-          label="Full Name" 
-          margin="normal" 
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-          disabled={loading}
-        />
-        <TextField 
-          fullWidth 
-          label="Email" 
-          margin="normal" 
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          type="email"
-          required
-          disabled={loading}
-        />
-        <TextField 
-          fullWidth 
-          label="Password" 
-          margin="normal" 
-          name="password"
-          value={formData.password}
-          onChange={handleChange}
-          type="password"
-          required
-          disabled={loading}
-        />
-        <Button 
-          fullWidth 
-          variant="contained" 
-          sx={{ mt: 2 }}
-          type="submit"
-          disabled={loading || !formData.name.trim() || !formData.email.trim() || !formData.password.trim()}
-        >
-          {loading ? (
-            <>
-              <CircularProgress size={20} sx={{ mr: 1 }} />
-              Creating Account...
-            </>
-          ) : (
-            'Sign Up'
-          )}
-        </Button>
-      </form>
+      <TextField 
+        fullWidth 
+        label="Full Name" 
+        margin="normal" 
+        name="name"
+        value={formData.name}
+        onChange={handleChange}
+        required
+        disabled={loading}
+      />
+      <TextField 
+        fullWidth 
+        label="Email" 
+        margin="normal" 
+        name="email"
+        value={formData.email}
+        onChange={handleChange}
+        type="email"
+        required
+        disabled={loading}
+      />
+      <TextField 
+        fullWidth 
+        label="Password" 
+        margin="normal" 
+        name="password"
+        value={formData.password}
+        onChange={handleChange}
+        type="password"
+        required
+        disabled={loading}
+      />
+      <Button 
+        fullWidth 
+        variant="contained" 
+        sx={{ mt: 2 }} 
+        type="submit"
+        disabled={loading || !formData.name.trim() || !formData.email.trim() || !formData.password.trim()}
+      >
+        {loading ? (
+          <>
+            <CircularProgress size={20} sx={{ mr: 1 }} />
+            Registering...
+          </>
+        ) : (
+          'Register'
+        )}
+      </Button>
       <Box mt={2} textAlign="center">
         <Link to="/login" style={{ textDecoration: 'none' }}>
           Already have an account? Login
