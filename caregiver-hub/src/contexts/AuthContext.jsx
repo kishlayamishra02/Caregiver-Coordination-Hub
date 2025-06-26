@@ -67,22 +67,29 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (email, password, name) => {
     try {
-      console.log("Calling createUserWithEmailAndPassword");
+      console.log("🔐 Creating user with email and password...");
       const result = await createUserWithEmailAndPassword(auth, email, password);
   
-      if (!result.user || !result.user.uid) throw new Error("No user ID returned");
+      if (!result.user || !result.user.uid) {
+        throw new Error("No user ID returned from Firebase Auth");
+      }
   
-      console.log("Updating user profile with name:", name);
+      console.log("👤 Updating user profile with displayName:", name);
       await updateProfile(result.user, { displayName: name });
   
-      console.log("Saving user to Firestore");
-      await setDoc(doc(db, "users", result.user.uid), {
-        name,
-        email,
-        createdAt: new Date(),
-        lastLogin: new Date(),
-      }, { merge: true });
-      
+      console.log("📝 Writing user data to Firestore...");
+      await setDoc(
+        doc(db, "users", result.user.uid),
+        {
+          name,
+          email,
+          createdAt: new Date(),
+          lastLogin: new Date(),
+        },
+        { merge: true }
+      );
+  
+      console.log("✅ Registration successful for:", email);
       return result.user;
     } catch (error) {
       console.error("🔥 Registration crash:", error.code, error.message);
