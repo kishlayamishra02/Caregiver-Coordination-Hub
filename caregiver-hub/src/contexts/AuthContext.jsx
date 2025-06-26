@@ -67,37 +67,29 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (email, password, name) => {
     try {
-      console.log('Attempting registration with:', email);
-
-      if (!auth) {
-        throw new Error('Firebase authentication not initialized');
-      }
-
-      // Create user in Firebase Auth
+      console.log("Calling createUserWithEmailAndPassword");
       const result = await createUserWithEmailAndPassword(auth, email, password);
-      console.log('Registration successful:', result.user);
-
-      // Update user's display name
-      await updateProfile(result.user, {
-        displayName: name
-      });
-
-      // Save user data to Firestore
+  
+      if (!result.user || !result.user.uid) throw new Error("No user ID returned");
+  
+      console.log("Updating user profile with name:", name);
+      await updateProfile(result.user, { displayName: name });
+  
+      console.log("Saving user to Firestore");
       await setDoc(doc(db, "users", result.user.uid), {
         name,
         email,
         createdAt: new Date(),
         lastLogin: new Date()
       });
-
+  
       return result.user;
     } catch (error) {
-      console.error('Registration error:', error);
-      const errorMessage = getErrorMessage(error);
-      console.error('Translated error:', errorMessage);
-      throw new Error(errorMessage);
+      console.error("🔥 Registration crash:", error.code, error.message);
+      throw new Error(getErrorMessage(error));
     }
   };
+  
 
   const logout = async () => {
     try {
