@@ -20,7 +20,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
-
+import { format } from 'date-fns';
 
 import {
   collection,
@@ -84,38 +84,38 @@ export default function Tasks() {
   };
 
   const handleAddTask = async () => {
-    if (!newTask.trim()) return;
+    if (!newTask.trim()) {
+      setError('Task title is required');
+      return;
+    }
 
     try {
       setLoading(true);
       setError(null);
       
-      if (!db || !user) {
-        throw new Error('Firebase or user not initialized');
-      }
-
-      console.log('Attempting to add task with data:', {
-        title: newTask,
-        description: '',
-        completed: false,
-        createdAt: new Date(),
-        userId: user?.uid,
-        priority: 'medium',
-        category: 'general'
-      });
-
+      // Get current date and time
+      const currentDate = new Date();
+      const currentTime = format(currentDate, 'HH:mm');
+      
+      // Format fullDateTime as string
+      const fullDateTimeStr = format(currentDate, 'yyyy-MM-dd HH:mm:ss');
+      
+      // Create the task document
       const docRef = await addDoc(collection(db, 'tasks'), {
         title: newTask,
         description: '',
         completed: false,
         createdAt: new Date(),
         userId: user?.uid,
+        date: format(currentDate, 'yyyy-MM-dd'),
+        time: currentTime,
+        fullDateTime: fullDateTimeStr,  // Store as string
         priority: 'medium',
-        category: 'general'
+        category: 'general',
+        reminderSent: false
       });
 
       console.log('Task added successfully with ID:', docRef.id);
-
       setOpenDialog(false);
       setNewTask('');
       fetchTasks();
@@ -182,6 +182,17 @@ export default function Tasks() {
       console.error('Error marking task as completed:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const formatDateTime = (dateString) => {
+    try {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return isNaN(date.getTime()) ? '' : format(date, 'yyyy-MM-dd HH:mm');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return '';
     }
   };
 
@@ -282,7 +293,7 @@ export default function Tasks() {
 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Typography variant="subtitle2" color="textSecondary">
-                    {new Date(task.createdAt).toLocaleDateString()}
+                    {formatDateTime(task.fullDateTime)}
                   </Typography>
                   <Button
                     variant="outlined"

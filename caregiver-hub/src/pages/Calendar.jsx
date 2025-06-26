@@ -52,10 +52,18 @@ export default function Calendar() {
 
     if (!user) return;
 
-    await fetch(`${backendUrl}/unity-link-26935/us-central1/syncCalendarToFirestore?userId=${user.uid}`);
-    
-    // Redirect with ?synced=true
-    window.location.href = `${frontendUrl}/calendar?synced=true`;
+    try {
+      // Use environment variable for production
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+      const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
+
+      await fetch(`${backendUrl}/unity-link-26935/us-central1/syncCalendarToFirestore?userId=${user.uid}`);
+      
+      // Redirect with ?synced=true
+      window.location.href = `${frontendUrl}/calendar?synced=true`;
+    } catch (error) {
+      console.error('Error syncing calendar:', error);
+    }
   };
 
   return (
@@ -63,7 +71,11 @@ export default function Calendar() {
       <button onClick={syncCalendar} style={{ marginBottom: '1rem' }}>
         Sync Calendar Now
       </button>
-      <CalendarView tasks={tasks} />
+      <CalendarView
+        tasks={tasks}
+        setTasks={setTasks}
+        syncCalendar={syncCalendar}
+       />
     </div>
   );
 }

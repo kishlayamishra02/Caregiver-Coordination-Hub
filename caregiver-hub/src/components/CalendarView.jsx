@@ -43,9 +43,10 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import { useAuth } from '../contexts/AuthContext';
 
-export default function CalendarView({ tasks = [], setTasks }) {
+export default function CalendarView({ tasks = [], setTasks, syncCalendar }) {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedTime, setSelectedTime] = useState('09:00');
   const [newTask, setNewTask] = useState('');
   const [editingTask, setEditingTask] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -60,15 +61,15 @@ export default function CalendarView({ tasks = [], setTasks }) {
     const fetchTasks = async () => {
       try {
         const q = query(
-          collection(db, 'calendarEvents'),
+          collection(db, 'tasks'),
           where('userId', '==', user?.uid),
           orderBy('date', 'asc'),
           orderBy('createdAt', 'desc')
         );
         const querySnapshot = await getDocs(q);
         const fetchedTasks = querySnapshot.docs.map(doc => ({
+          id: doc.id,
           ...doc.data(),
-          id: doc.id
         }));
         setTasks(fetchedTasks);
       } catch (error) {
@@ -83,41 +84,47 @@ export default function CalendarView({ tasks = [], setTasks }) {
   }, [user, setTasks]);
 
   const handleAddTask = async () => {
-    if (!newTask.trim()) return;
+    if (!newTask.trim() || !selectedDate) return;
     
     try {
       setLoading(true);
       setError(null);
       
-      await addDoc(collection(db, 'calendarEvents'), {
+      const fullDateTime = new Date(
+        format(selectedDate, 'yyyy-MM-dd') + 'T' + selectedTime + ':00'
+      );
+
+      await addDoc(collection(db, 'tasks'), {
         title: newTask,
+        description: '',
         date: format(selectedDate, 'yyyy-MM-dd'),
+        time: selectedTime,
+        fullDateTime: fullDateTime,
         createdAt: new Date(),
         userId: user?.uid,
         completed: false,
         priority: 'medium',
-        category: 'general'
+        category: 'general',
+        reminderSent: false
       });
-      
+
       setOpenDialog(false);
       setNewTask('');
-      
-      // Refresh the tasks list
-      const q = query(
-        collection(db, 'calendarEvents'),
-        where('userId', '==', user?.uid),
-        orderBy('date', 'asc'),
-        orderBy('createdAt', 'desc')
-      );
-      const querySnapshot = await getDocs(q);
-      const fetchedTasks = querySnapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id
-      }));
-      setTasks(fetchedTasks);
+      setSelectedTime('09:00');
+      setTasks(prev => [...prev, {
+        title: newTask,
+        date: format(selectedDate, 'yyyy-MM-dd'),
+        time: selectedTime,
+        fullDateTime: fullDateTime,
+        userId: user?.uid,
+        completed: false,
+        priority: 'medium',
+        category: 'general',
+        reminderSent: false
+      }]);
     } catch (error) {
-      setError('Failed to add task. Please try again.');
       console.error('Error adding task:', error);
+      setError('Failed to add task. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -128,7 +135,7 @@ export default function CalendarView({ tasks = [], setTasks }) {
       setLoading(true);
       setError(null);
       
-      await updateDoc(doc(db, 'calendarEvents', taskId), {
+      await updateDoc(doc(db, 'tasks', taskId), {
         title: newTitle
       });
       
@@ -136,7 +143,7 @@ export default function CalendarView({ tasks = [], setTasks }) {
       
       // Refresh the tasks list
       const q = query(
-        collection(db, 'calendarEvents'),
+        collection(db, 'tasks'),
         where('userId', '==', user?.uid),
         orderBy('date', 'asc'),
         orderBy('createdAt', 'desc')
@@ -156,30 +163,24 @@ export default function CalendarView({ tasks = [], setTasks }) {
   };
 
   const handleDeleteTask = async (taskId) => {
-    if (!window.confirm('Are you sure you want to delete this task?')) return;
-    
+    if (!taskId) {
+      setError('Invalid task ID');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
       
-      await deleteDoc(doc(db, 'calendarEvents', taskId));
+      // Delete from Firestore
+      await deleteDoc(doc(db, 'tasks', taskId));
       
-      // Refresh the tasks list
-      const q = query(
-        collection(db, 'calendarEvents'),
-        where('userId', '==', user?.uid),
-        orderBy('date', 'asc'),
-        orderBy('createdAt', 'desc')
-      );
-      const querySnapshot = await getDocs(q);
-      const fetchedTasks = querySnapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id
-      }));
-      setTasks(fetchedTasks);
+      // Update local state
+      setTasks(prev => prev.filter(task => task.id !== taskId));
+      
     } catch (error) {
-      setError('Failed to delete task. Please try again.');
       console.error('Error deleting task:', error);
+      setError('Failed to delete task. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -190,14 +191,14 @@ export default function CalendarView({ tasks = [], setTasks }) {
       setLoading(true);
       setError(null);
       
-      await updateDoc(doc(db, 'calendarEvents', taskId), {
+      await updateDoc(doc(db, 'tasks', taskId), {
         completed: true,
         completedAt: new Date()
       });
       
       // Refresh the tasks list
       const q = query(
-        collection(db, 'calendarEvents'),
+        collection(db, 'tasks'),
         where('userId', '==', user?.uid),
         orderBy('date', 'asc'),
         orderBy('createdAt', 'desc')
@@ -252,6 +253,13 @@ export default function CalendarView({ tasks = [], setTasks }) {
             sx={{ mb: 2 }}
             autoFocus
           />
+          <TextField
+            fullWidth
+            value={selectedTime}
+            onChange={(e) => setSelectedTime(e.target.value)}
+            placeholder="Enter task time"
+            sx={{ mb: 2 }}
+          />
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
             <Button
               variant="outlined"
@@ -265,7 +273,7 @@ export default function CalendarView({ tasks = [], setTasks }) {
             <Button
               variant="contained"
               onClick={handleAddTask}
-              disabled={loading || !newTask.trim()}
+              disabled={loading || !newTask.trim() || !selectedDate}
               startIcon={loading ? <CircularProgress size={20} /> : <AddIcon />}
             >
               {loading ? 'Adding...' : 'Add Task'}
@@ -364,7 +372,7 @@ export default function CalendarView({ tasks = [], setTasks }) {
                         pr: 1
                       }}
                     >
-                      {t.title}
+                      {t.title} - {t.time}
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 1 }}>
                       <Tooltip title="Edit">
