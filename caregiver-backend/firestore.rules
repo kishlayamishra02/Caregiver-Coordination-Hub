@@ -11,5 +11,10 @@ service cloud.firestore {
     match /users/{userId} {
       allow create, update, delete: if request.auth != null && request.auth.uid == userId;
     }
+
+    // Allow authenticated users to manage their own tasks
+    match /tasks/{taskId} {
+      allow read, create, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
   }
 }

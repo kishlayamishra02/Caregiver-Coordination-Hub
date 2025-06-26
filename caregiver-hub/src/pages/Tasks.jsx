@@ -34,6 +34,7 @@ import {
   orderBy
 } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
 
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
