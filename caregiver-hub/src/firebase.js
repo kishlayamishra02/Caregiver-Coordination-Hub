@@ -38,15 +38,21 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+
+// Check Firebase initialization
+if (!app) {
+  throw new Error('Failed to initialize Firebase app');
+}
+
 const messaging = getMessaging(app);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Check if Firebase is properly initialized
-function isFirebaseInitialized() {
-  return app && messaging && db && auth;
+// Check if Firebase services are properly initialized
+if (!db || !auth || !messaging) {
+  throw new Error('One or more Firebase services failed to initialize');
 }
 
 // Export Firebase services
-export { messaging, getToken, onMessage, db, auth, isFirebaseInitialized };
+export { messaging, getToken, onMessage, db, auth, app };
 export default app;

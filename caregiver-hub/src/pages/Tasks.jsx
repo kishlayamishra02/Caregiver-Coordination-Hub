@@ -89,8 +89,12 @@ export default function Tasks() {
     try {
       setLoading(true);
       setError(null);
+      
+      if (!db || !user) {
+        throw new Error('Firebase or user not initialized');
+      }
 
-      await addDoc(collection(db, 'tasks'), {
+      console.log('Attempting to add task with data:', {
         title: newTask,
         description: '',
         completed: false,
@@ -100,12 +104,27 @@ export default function Tasks() {
         category: 'general'
       });
 
+      const docRef = await addDoc(collection(db, 'tasks'), {
+        title: newTask,
+        description: '',
+        completed: false,
+        createdAt: new Date(),
+        userId: user?.uid,
+        priority: 'medium',
+        category: 'general'
+      });
+
+      console.log('Task added successfully with ID:', docRef.id);
+
       setOpenDialog(false);
       setNewTask('');
       fetchTasks();
     } catch (error) {
+      console.error('Detailed error:', error);
+      console.error('Error name:', error.name);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
       setError('Failed to add task. Please try again.');
-      console.error('Error adding task:', error);
     } finally {
       setLoading(false);
     }

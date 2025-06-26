@@ -5,17 +5,14 @@ publish = "dist"
 
 [build.environment]
 NODE_VERSION = "18"
-
-VITE_FIREBASE_API_KEY = "AIzaSyAxh0tIjlxGm1CCtmlhwCyagYQ4MNbnDdo"
-VITE_FIREBASE_AUTH_DOMAIN = "caregiver-coordination-hub.firebaseapp.com"
-VITE_FIREBASE_PROJECT_ID = "caregiver-coordination-hub"
-VITE_FIREBASE_STORAGE_BUCKET = "caregiver-coordination-hub.appspot.com"
-VITE_FIREBASE_MESSAGING_SENDER_ID = "450043180225"
-VITE_FIREBASE_APP_ID = "1:450043180225:web:6259141b059625484236fe"
-VITE_FIREBASE_MEASUREMENT_ID = "G-YEXL6ZZ4DT"
-VITE_VAPID_KEY = "your_vapid_key=BEqLpOxWvyqVZNeLGd7aZLBiTMK1dm9qWUxW0h1vt4KAtojw06WjUaEVIcqJ0q_HfVbNnG_IafTghViuLTin05Y"
-BACKEND_URL = "https://us-central1-caregiver-coordination-hub.cloudfunctions.net"
-VITE_FRONTEND_URL = "https://caregiverhub.netlify.app"
+VITE_FIREBASE_API_KEY = "AIzaSyDYXV-5RNkaATCRk0kZfLQ3NMmPtGw0v8I"
+VITE_FIREBASE_AUTH_DOMAIN = "unity-link-26935.firebaseapp.com"
+VITE_FIREBASE_PROJECT_ID = "unity-link-26935"
+VITE_FIREBASE_STORAGE_BUCKET = "unity-link-26935.firebasestorage.app"
+VITE_FIREBASE_MESSAGING_SENDER_ID = "334131837545"
+VITE_FIREBASE_APP_ID = "1:334131837545:web:5ffb212835645bc1d500f8"
+VITE_FIREBASE_MEASUREMENT_ID = "G-Z1S2KZTC7Y"
+VITE_VAPID_KEY = "BAhH-3FFv86ZhGEs2t-2Q_rPC1fsWCUQzRk6DykOop8RSOJJZehp4GAD0kv78s8kuwiFkafJTssnE-nDArtCcJY"
 
 [[redirects]]
 from = "/*"
