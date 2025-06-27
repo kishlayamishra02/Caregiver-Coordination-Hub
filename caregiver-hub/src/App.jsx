@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect } from "react";
+import { useEffect, useContext } from "react";
 import { getToken, onMessage } from "firebase/messaging";
 import { initializeApp } from "firebase/app";
 import Layout from './components/Layout';
@@ -19,7 +19,7 @@ import { messaging } from './firebase';
 import { ThemeProvider } from './contexts/ThemeContext';
 
 const ProtectedRoute = ({ children }) => {
-  const { user, loading } = React.useContext(AuthContext);
+  const { user, loading } = useContext(AuthContext);
   
   if (loading) {
     return <div>Loading...</div>;
@@ -32,67 +32,76 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-export default function App() {
+const AppContent = () => {
+  const { user } = useContext(AuthContext);
+
   useEffect(() => {
-    // Register service worker regardless of environment
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/firebase-messaging-sw.js')
-        .then((registration) => {
-          console.log("✅ Service worker registered");
-          
-          // Ask for notification permission
-          Notification.requestPermission().then((permission) => {
-            if (permission === "granted") {
-              getToken(messaging, {
-                vapidKey: import.meta.env.VITE_VAPID_KEY,
-                serviceWorkerRegistration: registration,
-              })
-                .then((currentToken) => {
+    // Only set up push notifications in production
+    if (import.meta.env.NODE_ENV === 'production' && user) {
+      try {
+        navigator.serviceWorker
+          .register('/firebase-messaging-sw.js')
+          .then((registration) => {
+            console.log("✅ Service worker registered");
+            
+            // Request notification permission
+            Notification.requestPermission().then((permission) => {
+              if (permission === "granted") {
+                console.log('✅ Notification permission granted');
+                
+                // Get token
+                getToken(messaging, {
+                  vapidKey: import.meta.env.VITE_VAPID_KEY,
+                  serviceWorkerRegistration: registration,
+                }).then((currentToken) => {
                   if (currentToken) {
                     console.log('✅ Current token: ', currentToken);
                   } else {
                     console.log('❌ No registration token available');
                   }
-                })
-                .catch((err) => {
-                  console.log('❌ An error occurred while retrieving token. ', err);
+                }).catch((err) => {
+                  console.log('❌ Error getting token: ', err);
                 });
-            }
+              } else {
+                console.log('❌ Notification permission denied');
+              }
+            });
+          })
+          .catch((err) => {
+            console.log('❌ Service worker registration failed: ', err);
           });
-        })
-        .catch((err) => {
-          console.log('❌ Service worker registration failed:', err);
-        });
+      } catch (err) {
+        console.log('❌ Error setting up messaging: ', err);
+      }
     }
-  }, []);
+  }, [user]);
 
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+          <Route path="notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
+          <Route path="tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+          <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="signout" element={<ProtectedRoute><SignOut /></ProtectedRoute>} />
+          <Route path="login" element={<Login />} />
+          <Route path="register" element={<Register />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+};
+
+export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Dashboard />} />
-              <Route path="calendar" element={<Calendar />} />
-              <Route path="notes" element={<Notes />} />
-              <Route path="tasks" element={<Tasks />} />
-              <Route path="profile" element={<Profile />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="signout" element={<SignOut />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <AppContent />
       </AuthProvider>
     </ThemeProvider>
   );

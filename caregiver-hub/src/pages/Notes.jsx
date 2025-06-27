@@ -13,7 +13,6 @@ import {
   Tooltip,
   Alert,
   CircularProgress,
-  Grid,
   Tabs,
   Tab,
   Chip,
@@ -26,8 +25,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Autocomplete,
-  TextField as MuiTextField,
+  Avatar,
+  Badge,
+  useTheme,
+  styled
 } from '@mui/material';
 import {
   Add,
@@ -38,6 +39,11 @@ import {
   Label,
   Star,
   StarBorder,
+  Bookmark,
+  BookmarkBorder,
+  NoteAdd,
+  Folder,
+  FilterList
 } from '@mui/icons-material';
 import { db } from '../firebase';
 import {
@@ -53,7 +59,35 @@ import {
 } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 
+// Styled components for enhanced UI
+const StyledPaper = styled(Paper)(({ theme }) => ({
+  borderRadius: '12px',
+  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+  transition: 'transform 0.2s',
+  '&:hover': {
+    transform: 'translateY(-2px)'
+  }
+}));
+
+const NoteCard = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(2),
+  marginBottom: theme.spacing(2),
+  borderRadius: '10px',
+  borderLeft: `4px solid ${theme.palette.primary.main}`,
+  '&.pinned': {
+    backgroundColor: theme.palette.primary.lighter,
+    borderLeft: `4px solid ${theme.palette.secondary.main}`
+  }
+}));
+
+const CategoryChip = styled(Chip)(({ theme }) => ({
+  marginRight: theme.spacing(1),
+  borderRadius: '6px',
+  fontWeight: 500
+}));
+
 export default function Notes() {
+  const theme = useTheme();
   const [notes, setNotes] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [newNote, setNewNote] = useState('');
@@ -61,7 +95,10 @@ export default function Notes() {
   const [editingNote, setEditingNote] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [categories, setCategories] = useState(['General', 'Medical', 'Medication', 'Appointments']);
+  const [categories, setCategories] = useState([
+    'General', 'Medical', 'Medication',
+    'Appointments', 'Personal', 'Work'
+  ]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState(0);
@@ -94,53 +131,41 @@ export default function Notes() {
     }
   };
 
-  const handleAddNote = async () => {
+  const handleSaveNote = async () => {
     if (!newNote.trim() || !newContent.trim()) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      await addDoc(collection(db, 'notes'), {
+      const payload = {
         title: newNote,
         content: newContent,
         category: selectedCategory || 'General',
-        createdAt: new Date(),
         updatedAt: new Date(),
         userId: user?.uid,
-        isPinned: false,
-        tags: []
-      });
+      };
+
+      if (editingNote) {
+        await updateDoc(doc(db, 'notes', editingNote), payload);
+      } else {
+        await addDoc(collection(db, 'notes'), {
+          ...payload,
+          createdAt: new Date(),
+          isPinned: false,
+          tags: []
+        });
+      }
 
       setOpenDialog(false);
       setNewNote('');
       setNewContent('');
       setSelectedCategory('');
-      fetchNotes();
-    } catch (error) {
-      setError('Failed to add note. Please try again.');
-      console.error('Error adding note:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEditNote = async (noteId, newTitle, newContent) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      await updateDoc(doc(db, 'notes', noteId), {
-        title: newTitle,
-        content: newContent,
-        updatedAt: new Date(),
-      });
-
       setEditingNote(null);
       fetchNotes();
     } catch (error) {
-      setError('Failed to update note. Please try again.');
-      console.error('Error updating note:', error);
+      setError('Failed to save note. Please try again.');
+      console.error('Error saving note:', error);
     } finally {
       setLoading(false);
     }
@@ -182,61 +207,137 @@ export default function Notes() {
     }
   };
 
-  const handleSearch = (event) => {
-    setSearchTerm(event.target.value);
-  };
-
   const filteredNotes = notes.filter(note => {
     if (selectedCategory && note.category !== selectedCategory) return false;
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       return note.title.toLowerCase().includes(searchLower) ||
-             note.content.toLowerCase().includes(searchLower) ||
-             note.category.toLowerCase().includes(searchLower);
+        note.content.toLowerCase().includes(searchLower) ||
+        note.category.toLowerCase().includes(searchLower);
     }
     return true;
   });
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Notes
-      </Typography>
+    <Box sx={{ p: 3, maxWidth: '1200px', margin: '0 auto' }}>
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        mb: 3
+      }}>
+        <Typography variant="h4" sx={{
+          fontWeight: 700,
+          color: theme.palette.primary.dark,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <NoteAdd fontSize="large" /> My Notes
+        </Typography>
+
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() => {
+            setOpenDialog(true);
+            setNewNote('');
+            setNewContent('');
+            setSelectedCategory('');
+            setEditingNote(null);
+          }}
+          sx={{
+            borderRadius: '8px',
+            px: 3,
+            py: 1,
+            textTransform: 'none',
+            fontWeight: 600,
+            boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+          }}
+        >
+          Create Note
+        </Button>
+      </Box>
 
       {/* Search and Filter Bar */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+      <StyledPaper sx={{ p: 2, mb: 3 }}>
+        <Box sx={{
+          display: 'flex',
+          gap: 2,
+          alignItems: 'center',
+          flexWrap: 'wrap'
+        }}>
           <TextField
             placeholder="Search notes..."
             size="small"
-            onChange={handleSearch}
-            sx={{ flexGrow: 1 }}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ flexGrow: 1, maxWidth: '400px' }}
             InputProps={{
-              startAdornment: <Search sx={{ mr: 1 }} />,
+              startAdornment: (
+                <Search sx={{
+                  mr: 1,
+                  color: theme.palette.action.active
+                }} />
+              ),
+              sx: {
+                borderRadius: '8px'
+              }
             }}
           />
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Category</InputLabel>
+
+          <FormControl size="small" sx={{ minWidth: 180 }}>
+            <InputLabel id="filter-category-label">Filter by Category</InputLabel>
             <Select
+              labelId="filter-category-label"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              label="Category"
+              label="Filter by Category"
+              sx={{ borderRadius: '8px', pl: 4 }} // extra padding left for the icon
+              startAdornment={
+                <FilterList
+                  fontSize="small"
+                  sx={{
+                    position: 'absolute',
+                    left: 12,
+                    color: theme.palette.action.active
+                  }}
+                />
+              }
             >
-              <MenuItem value="">All</MenuItem>
+
+              <MenuItem value="">All Categories</MenuItem>
               {categories.map((category) => (
                 <MenuItem key={category} value={category}>
-                  {category}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Folder fontSize="small" /> {category}
+                  </Box>
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
         </Box>
-      </Paper>
+      </StyledPaper>
 
       {/* Add Note Dialog */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
-        <DialogTitle>{editingNote ? 'Edit Note' : 'Add New Note'}</DialogTitle>
-        <DialogContent>
+      <Dialog
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '12px'
+          }
+        }}
+      >
+        <DialogTitle sx={{
+          bgcolor: theme.palette.primary.main,
+          color: 'white',
+          fontWeight: 600
+        }}>
+          {editingNote ? 'Edit Note' : 'Create New Note'}
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
           <TextField
             autoFocus
             margin="dense"
@@ -246,15 +347,27 @@ export default function Notes() {
             onChange={(e) => setNewNote(e.target.value)}
             error={!!error}
             helperText={error}
+            sx={{ mb: 2 }}
+            InputProps={{
+              sx: {
+                borderRadius: '8px'
+              }
+            }}
           />
           <TextField
             margin="dense"
             label="Note Content"
             fullWidth
             multiline
-            rows={4}
+            rows={6}
             value={newContent}
             onChange={(e) => setNewContent(e.target.value)}
+            sx={{ mb: 2 }}
+            InputProps={{
+              sx: {
+                borderRadius: '8px'
+              }
+            }}
           />
           <FormControl fullWidth margin="dense">
             <InputLabel>Category</InputLabel>
@@ -262,6 +375,9 @@ export default function Notes() {
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               label="Category"
+              sx={{
+                borderRadius: '8px'
+              }}
             >
               {categories.map((category) => (
                 <MenuItem key={category} value={category}>
@@ -271,126 +387,215 @@ export default function Notes() {
             </Select>
           </FormControl>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-          <Button onClick={handleAddNote} variant="contained" disabled={loading}>
-            {loading ? <CircularProgress size={24} /> : 'Save Note'}
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            onClick={() => setOpenDialog(false)}
+            sx={{
+              borderRadius: '6px',
+              px: 2,
+              textTransform: 'none'
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSaveNote}
+            variant="contained"
+            disabled={loading}
+            sx={{
+              borderRadius: '6px',
+              px: 3,
+              textTransform: 'none',
+              fontWeight: 500
+            }}
+          >
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : editingNote ? (
+              'Update Note'
+            ) : (
+              'Save Note'
+            )}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Notes List */}
-      <Paper sx={{ p: 2 }}>
-        <Box sx={{ mb: 2 }}>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => {
-              setOpenDialog(true);
-              setNewNote('');
-              setNewContent('');
-              setSelectedCategory('');
-              setEditingNote(null);
-            }}
-          >
-            Add Note
-          </Button>
-        </Box>
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
+      <Box sx={{ mb: 3 }}>
         <Tabs
           value={selectedTab}
           onChange={handleTabChange}
-          sx={{ mb: 2 }}
+          sx={{
+            '& .MuiTabs-indicator': {
+              height: '4px',
+              borderRadius: '2px'
+            }
+          }}
         >
-          <Tab label="All Notes" />
-          <Tab label="Pinned" />
+          <Tab
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <BookmarkBorder /> All Notes
+              </Box>
+            }
+            sx={{ textTransform: 'none', fontWeight: 500 }}
+          />
+          <Tab
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Bookmark /> Pinned
+              </Box>
+            }
+            sx={{ textTransform: 'none', fontWeight: 500 }}
+          />
         </Tabs>
+      </Box>
 
-        <List>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2, borderRadius: '8px' }}>
+          {error}
+        </Alert>
+      )}
+
+      {filteredNotes.length === 0 ? (
+        <StyledPaper sx={{
+          p: 4,
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 2
+        }}>
+          <img
+            src="/empty-notes.svg"
+            alt="No notes"
+            style={{ width: '200px', opacity: 0.7 }}
+          />
+          <Typography variant="h6" color="text.secondary">
+            {selectedTab === 1 ?
+              'No pinned notes yet' :
+              'No notes found. Create your first note!'}
+          </Typography>
+          <Button
+            variant="outlined"
+            startIcon={<Add />}
+            onClick={() => setOpenDialog(true)}
+            sx={{ mt: 2 }}
+          >
+            Create Note
+          </Button>
+        </StyledPaper>
+      ) : (
+        <List sx={{ display: 'grid', gap: 2 }}>
           {filteredNotes
             .filter(note => selectedTab === 1 ? note.isPinned : true)
             .map((note) => (
-              <React.Fragment key={note.id}>
-                <ListItem
-                  secondaryAction={
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Tooltip title="Pin/Unpin Note">
-                        <IconButton
-                          onClick={() => togglePinNote(note.id, note.isPinned)}
-                          disabled={loading}
-                        >
-                          {note.isPinned ? <Star /> : <StarBorder />}
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Edit Note">
-                        <IconButton
-                          onClick={() => {
-                            setNewNote(note.title);
-                            setNewContent(note.content);
-                            setSelectedCategory(note.category);
-                            setEditingNote(note.id);
-                            setOpenDialog(true);
-                          }}
-                          disabled={loading}
-                        >
-                          <Edit />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete Note">
-                        <IconButton
-                          onClick={() => handleDeleteNote(note.id)}
-                          disabled={loading}
-                        >
-                          <Delete />
-                        </IconButton>
-                      </Tooltip>
+              <NoteCard
+                key={note.id}
+                className={note.isPinned ? 'pinned' : ''}
+                elevation={2}
+              >
+                <Box sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start'
+                }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 600,
+                        mb: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1
+                      }}
+                    >
+                      {note.title}
+                      {note.isPinned && (
+                        <Star color="secondary" fontSize="small" />
+                      )}
+                    </Typography>
+
+                    <Typography
+                      variant="body1"
+                      color="text.secondary"
+                      sx={{
+                        whiteSpace: 'pre-line',
+                        mb: 2
+                      }}
+                    >
+                      {note.content}
+                    </Typography>
+
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      <CategoryChip
+                        label={note.category}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                      />
+                      <Chip
+                        label={
+                          note.createdAt?.toDate().toLocaleString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
+                        }
+                        size="small"
+                        variant="outlined"
+                      />
                     </Box>
-                  }
-                >
-                  <ListItemText
-                    primary={note.title}
-                    secondary={
-                      <React.Fragment>
-                        <Typography
-                          component="span"
-                          variant="body2"
-                          color="text.primary"
-                        >
-                          {note.content}
-                        </Typography>
-                        <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
-                          <Chip
-                            label={note.category}
-                            size="small"
-                            icon={<Category />}
-                          />
-                          <Typography variant="caption" color="text.secondary">
-                            {new Date(note.createdAt).toLocaleDateString()}
-                          </Typography>
-                        </Box>
-                      </React.Fragment>
-                    }
-                  />
-                </ListItem>
-                <Divider />
-              </React.Fragment>
+                  </Box>
+
+                  <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    <Tooltip title={note.isPinned ? 'Unpin note' : 'Pin note'}>
+                      <IconButton
+                        onClick={() => togglePinNote(note.id, note.isPinned)}
+                        disabled={loading}
+                        size="small"
+                        color={note.isPinned ? 'secondary' : 'default'}
+                      >
+                        {note.isPinned ? <Star /> : <StarBorder />}
+                      </IconButton>
+                    </Tooltip>
+
+                    <Tooltip title="Edit note">
+                      <IconButton
+                        onClick={() => {
+                          setNewNote(note.title);
+                          setNewContent(note.content);
+                          setSelectedCategory(note.category);
+                          setEditingNote(note.id);
+                          setOpenDialog(true);
+                        }}
+                        disabled={loading}
+                        size="small"
+                        color="primary"
+                      >
+                        <Edit />
+                      </IconButton>
+                    </Tooltip>
+
+                    <Tooltip title="Delete note">
+                      <IconButton
+                        onClick={() => handleDeleteNote(note.id)}
+                        disabled={loading}
+                        size="small"
+                        color="error"
+                      >
+                        <Delete />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Box>
+              </NoteCard>
             ))}
         </List>
-
-        {filteredNotes.length === 0 && (
-          <Box sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="body1" color="text.secondary">
-              No notes found. Create your first note using the button above.
-            </Typography>
-          </Box>
-        )}
-      </Paper>
+      )}
     </Box>
   );
 }

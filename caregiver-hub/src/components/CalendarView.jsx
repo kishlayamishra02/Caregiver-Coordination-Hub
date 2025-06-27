@@ -1,411 +1,202 @@
 import {
-  Paper,
-  Typography,
-  Grid,
-  Box,
-  Button,
-  Dialog,
-  TextField,
-  IconButton,
-  Tooltip,
-  CircularProgress,
-  Alert,
+  Paper, Typography, Grid, Box,
+  Dialog, TextField, IconButton, Tooltip, CircularProgress,
+  Checkbox, FormControl, InputLabel, Select, MenuItem, Chip,
+  Button, useTheme, styled
 } from '@mui/material';
 import {
-  format,
-  startOfMonth,
-  addDays,
-  parseISO,
-  isSameDay,
-  startOfDay,
-  endOfDay,
-  addHours,
+  format, startOfMonth, addDays, isSameDay, isToday, isTomorrow, isPast, isWeekend, addMonths
 } from 'date-fns';
 import { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import {
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc,
-  updateDoc,
-  doc,
-  orderBy,
-  deleteDoc,
+  collection, query, where, getDocs,
+  addDoc, updateDoc, doc, deleteDoc, orderBy, Timestamp
 } from 'firebase/firestore';
-import AddIcon from '@mui/icons-material/Add';
-import CloseIcon from '@mui/icons-material/Close';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EventIcon from '@mui/icons-material/Event';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorIcon from '@mui/icons-material/Error';
-import { useAuth } from '../contexts/AuthContext';
+import {
+  Event as EventIcon,
+  DoneAll, RadioButtonUnchecked, Error as PriorityError,
+  Label as LabelIcon, Star as StarIcon, StarBorder as StarBorderIcon
+} from '@mui/icons-material';
 
-export default function CalendarView({ tasks = [], setTasks, syncCalendar }) {
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedTime, setSelectedTime] = useState('09:00');
-  const [newTask, setNewTask] = useState('');
-  const [editingTask, setEditingTask] = useState(null);
+// Styled components
+const CalendarDay = styled(Paper)(({ theme, istoday, istomorrow, isweekend, ispast, hastasks }) => ({
+  padding: theme.spacing(1),
+  borderRadius: '12px',
+  minHeight: '140px',
+  display: 'flex',
+  flexDirection: 'column',
+  transition: 'transform 0.2s, box-shadow 0.2s',
+  background: istoday ? '#e3f2fd' : istomorrow ? '#f0f0f0' : isweekend ? '#fafafa' : '#fff',
+  border: `1px solid ${istoday ? theme.palette.primary.main : theme.palette.divider}`,
+  boxShadow: hastasks && !istoday ? theme.shadows[2] : theme.shadows[1],
+  opacity: ispast && !istoday ? 0.6 : 1,
+  '&:hover': { transform: 'translateY(-4px)', boxShadow: theme.shadows[5] },
+}));
+
+const getPaletteColor = (priority) => {
+  switch (priority) {
+    case 'high':
+      return 'error';
+    case 'medium':
+      return 'warning';
+    case 'low':
+      return 'success';
+    default:
+      return 'grey';
+  }
+};
+
+const TaskItem = styled(Box)(({ theme, completed, priority }) => {
+  const colorKey = getPaletteColor(priority);
+  return {
+    display: 'flex',
+    alignItems: 'center',
+    padding: theme.spacing(0.5),
+    marginBottom: theme.spacing(0.5),
+    borderRadius: '6px',
+    backgroundColor: completed
+      ? theme.palette.success.light
+      : theme.palette[colorKey]?.light || theme.palette.grey[200],
+    borderLeft: `3px solid ${
+      completed ? theme.palette.success.main : theme.palette[colorKey]?.main || theme.palette.grey[500]
+    }`,
+    cursor: 'pointer',
+    '&:hover': {
+      backgroundColor: theme.palette.action.hover,
+    },
+  };
+});
+
+export default function CalendarView({ user }) {
+  const theme = useTheme();
+  const [tasks, setTasks] = useState([]);
+  const [notes, setNotes] = useState([]);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedTask, setSelectedTask] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const { user } = useAuth();
 
-  const start = startOfMonth(new Date());
-  const days = [...Array(30).keys()].map(i => addDays(start, i));
+  const days = [...Array(35)].map((_, i) => addDays(startOfMonth(currentMonth), i));
 
-  // Fetch tasks from Firestore
   useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const q = query(
-          collection(db, 'tasks'),
-          where('userId', '==', user?.uid),
-          orderBy('date', 'asc'),
-          orderBy('createdAt', 'desc')
-        );
-        const querySnapshot = await getDocs(q);
-        const fetchedTasks = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setTasks(fetchedTasks);
-      } catch (error) {
-        console.error('Error fetching tasks:', error);
-        setError('Failed to fetch tasks. Please try again later.');
-      }
+    const fetchItems = async () => {
+      if (!user) return;
+      const startDate = startOfMonth(currentMonth);
+      const endDate = addDays(startDate, 35);
+
+      // Fetch tasks
+      const tq = query(
+        collection(db, 'tasks'),
+        where('userId', '==', user.uid),
+        where('dueDate', '>=', Timestamp.fromDate(startDate)),
+        where('dueDate', '<=', Timestamp.fromDate(endDate)),
+        orderBy('dueDate')
+      );
+      const taskSnap = await getDocs(tq);
+      setTasks(taskSnap.docs.map(d => ({ id: d.id, ...d.data(), dueDate: d.data().dueDate.toDate() })));
+
+      // Fetch notes
+      const nq = query(
+        collection(db, 'notes'),
+        where('userId', '==', user.uid),
+        where('createdAt', '>=', Timestamp.fromDate(startDate)),
+        where('createdAt', '<=', Timestamp.fromDate(endDate)),
+        orderBy('createdAt')
+      );
+      const noteSnap = await getDocs(nq);
+      setNotes(noteSnap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt.toDate() })));
     };
+    fetchItems();
+  }, [user, currentMonth]);
 
-    if (user) {
-      fetchTasks();
-    }
-  }, [user, setTasks]);
-
-  const handleAddTask = async () => {
-    if (!newTask.trim() || !selectedDate) return;
-    
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const fullDateTime = new Date(
-        format(selectedDate, 'yyyy-MM-dd') + 'T' + selectedTime + ':00'
-      );
-
-      await addDoc(collection(db, 'tasks'), {
-        title: newTask,
-        description: '',
-        date: format(selectedDate, 'yyyy-MM-dd'),
-        time: selectedTime,
-        fullDateTime: fullDateTime,
-        createdAt: new Date(),
-        userId: user?.uid,
-        completed: false,
-        priority: 'medium',
-        category: 'general',
-        reminderSent: false
-      });
-
-      setOpenDialog(false);
-      setNewTask('');
-      setSelectedTime('09:00');
-      setTasks(prev => [...prev, {
-        title: newTask,
-        date: format(selectedDate, 'yyyy-MM-dd'),
-        time: selectedTime,
-        fullDateTime: fullDateTime,
-        userId: user?.uid,
-        completed: false,
-        priority: 'medium',
-        category: 'general',
-        reminderSent: false
-      }]);
-    } catch (error) {
-      console.error('Error adding task:', error);
-      setError('Failed to add task. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEditTask = async (taskId, newTitle) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      await updateDoc(doc(db, 'tasks', taskId), {
-        title: newTitle
-      });
-      
-      setEditingTask(null);
-      
-      // Refresh the tasks list
-      const q = query(
-        collection(db, 'tasks'),
-        where('userId', '==', user?.uid),
-        orderBy('date', 'asc'),
-        orderBy('createdAt', 'desc')
-      );
-      const querySnapshot = await getDocs(q);
-      const fetchedTasks = querySnapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id
-      }));
-      setTasks(fetchedTasks);
-    } catch (error) {
-      setError('Failed to update task. Please try again.');
-      console.error('Error updating task:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteTask = async (taskId) => {
-    if (!taskId) {
-      setError('Invalid task ID');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Delete from Firestore
-      await deleteDoc(doc(db, 'tasks', taskId));
-      
-      // Update local state
-      setTasks(prev => prev.filter(task => task.id !== taskId));
-      
-    } catch (error) {
-      console.error('Error deleting task:', error);
-      setError('Failed to delete task. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const markTaskAsCompleted = async (taskId) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      await updateDoc(doc(db, 'tasks', taskId), {
-        completed: true,
-        completedAt: new Date()
-      });
-      
-      // Refresh the tasks list
-      const q = query(
-        collection(db, 'tasks'),
-        where('userId', '==', user?.uid),
-        orderBy('date', 'asc'),
-        orderBy('createdAt', 'desc')
-      );
-      const querySnapshot = await getDocs(q);
-      const fetchedTasks = querySnapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id
-      }));
-      setTasks(fetchedTasks);
-    } catch (error) {
-      setError('Failed to mark task as completed. Please try again.');
-      console.error('Error marking task as completed:', error);
-    } finally {
-      setLoading(false);
+  const toggleComplete = async item => {
+    await updateDoc(doc(db, item.collection, item.id), { completed: !item.completed, updatedAt: Timestamp.now() });
+    if (item.collection === 'tasks') {
+      setTasks(prev => prev.map(t => t.id === item.id ? { ...t, completed: !t.completed } : t));
     }
   };
 
   return (
-    <Box sx={{ p: 2 }}>
-      <Typography
-        variant="h4"
-        align="center"
-        gutterBottom
-        sx={{
-          fontWeight: 700,
-          mb: 4,
-          color: '#1976d2',
-          textShadow: '0 2px 8px rgba(25, 118, 210, 0.08)',
-        }}
-      >
-        Calendar
-      </Typography>
-
-      {/* Add Task Dialog */}
-      <Dialog
-        open={openDialog}
-        onClose={() => {
-          setOpenDialog(false);
-          setNewTask('');
-        }}
-        maxWidth="sm"
-        fullWidth
-      >
-        <Box p={3}>
-          <Typography variant="h6" mb={2}>Add New Task</Typography>
-          <TextField
-            fullWidth
-            value={newTask}
-            onChange={(e) => setNewTask(e.target.value)}
-            placeholder="Enter task title"
-            sx={{ mb: 2 }}
-            autoFocus
-          />
-          <TextField
-            fullWidth
-            value={selectedTime}
-            onChange={(e) => setSelectedTime(e.target.value)}
-            placeholder="Enter task time"
-            sx={{ mb: 2 }}
-          />
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setOpenDialog(false);
-                setNewTask('');
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleAddTask}
-              disabled={loading || !newTask.trim() || !selectedDate}
-              startIcon={loading ? <CircularProgress size={20} /> : <AddIcon />}
-            >
-              {loading ? 'Adding...' : 'Add Task'}
-            </Button>
-          </Box>
+    <Box sx={{ p: 3, maxWidth: 1600, margin: '0 auto' }}>
+      {/* Month Navigation */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h3" sx={{ fontWeight: 700, background: 'linear-gradient(135deg, #2196f3, #ff4081)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          {format(currentMonth, 'MMMM yyyy')}
+        </Typography>
+        <Box>
+          <Button onClick={() => setCurrentMonth(addMonths(currentMonth, -1))}>Prev</Button>
+          <Button variant="contained" sx={{ mx: 1 }} onClick={() => setCurrentMonth(new Date())}>Today</Button>
+          <Button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>Next</Button>
         </Box>
-      </Dialog>
+      </Box>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      <Grid container spacing={2} justifyContent="center">
-        {days.map((day, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
-            <Paper
-              sx={{
-                p: 2,
-                borderRadius: 2,
-                minHeight: 90,
-                background: 'linear-gradient(120deg, #e3f2fd 0%, #bbdefb 100%)',
-                boxShadow: '0 2px 8px 0 rgba(25, 118, 210, 0.08)',
-                position: 'relative',
-                cursor: 'pointer',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  transition: 'transform 0.2s ease-in-out',
-                }
-              }}
-              onClick={() => {
-                setSelectedDate(day);
-                setOpenDialog(true);
-              }}
-            >
-              <Typography 
-                variant="subtitle1" 
-                sx={{ 
-                  fontWeight: 600,
-                  mb: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between'
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <EventIcon sx={{ color: '#1976d2' }} />
-                  {format(day, 'MMM dd')}
-                </Box>
-                <Tooltip title="Add Task">
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedDate(day);
-                      setOpenDialog(true);
-                    }}
-                  >
-                    <AddIcon />
-                  </IconButton>
-                </Tooltip>
-              </Typography>
-              
-              {tasks
-                .filter(t => t.date === format(day, 'yyyy-MM-dd'))
-                .map((t, i) => (
-                  <Box
-                    key={i}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      mb: 1,
-                      p: 1,
-                      borderRadius: 1,
-                      bgcolor: t.completed ? 'success.light' : 'primary.light',
-                      opacity: t.completed ? 0.8 : 1
-                    }}
-                  >
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        markTaskAsCompleted(t.id);
-                      }}
-                      sx={{ mr: 1 }}
-                    >
-                      {t.completed ? <CheckCircleIcon color="success" /> : <ErrorIcon color="error" />}
-                    </IconButton>
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        color: t.completed ? 'success.main' : '#1976d2',
-                        textDecoration: t.completed ? 'line-through' : 'none',
-                        flex: 1,
-                        pr: 1
-                      }}
-                    >
-                      {t.title} - {t.time}
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Tooltip title="Edit">
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingTask({
-                              id: t.id,
-                              title: t.title
-                            });
-                          }}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete">
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteTask(t.id);
-                          }}
-                        >
-                          <DeleteIcon color="error" />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  </Box>
-                ))}
-            </Paper>
+      {/* Weekday Headers */}
+      <Grid container spacing={2}>
+        {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day => (
+          <Grid item xs key={day} sx={{ textAlign: 'center' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{day}</Typography>
           </Grid>
         ))}
+      </Grid>
+
+      {/* Days Grid */}
+      <Grid container spacing={2}>
+        {days.map((day, i) => {
+          const dayTasks = tasks.filter(t => isSameDay(t.dueDate, day));
+          const dayNotes = notes.filter(n => isSameDay(n.createdAt, day));
+          return (
+            <Grid item xs={12} sm={6} md={4} lg={12/7} key={i}>
+              <CalendarDay
+                istoday={isToday(day)} istomorrow={isTomorrow(day)}
+                isweekend={isWeekend(day)} ispast={isPast(day) && !isToday(day)}
+                hastasks={dayTasks.length + dayNotes.length > 0}
+              >
+                <Typography sx={{ fontWeight: 600, mb: .5 }}>
+                  {isToday(day) ? 'Today' : format(day, 'MMM d')}
+                </Typography>
+                <Box sx={{ flex: 1, overflowY: 'auto' }}>
+                  {dayTasks.map(t => (
+                    <TaskItem
+                      key={t.id} completed={t.completed} variantColor={t.priority}
+                      onClick={() => toggleComplete({ ...t, collection: 'tasks' })}
+                    >
+                      <Checkbox
+                        checked={t.completed}
+                        icon={<RadioButtonUnchecked fontSize="small" />}
+                        checkedIcon={<DoneAll fontSize="small" />}
+                        size="small"
+                        onClick={e => e.stopPropagation()}
+                      />
+                      <Typography noWrap sx={{ ml: 1, textDecoration: t.completed ? 'line-through' : 'none' }}>
+                        {t.title}
+                      </Typography>
+                      {t.priority === 'high' && <PriorityError fontSize="small" color="error" sx={{ ml: 'auto' }} />}
+                    </TaskItem>
+                  ))}
+                  {dayNotes.map(n => (
+                    <TaskItem
+                      key={n.id} completed={false} variantColor="info"
+                      onClick={() => toggleComplete({ ...n, collection: 'notes' })}
+                    >
+                      <Checkbox
+                        checked={false}
+                        icon={<StarBorderIcon fontSize="small" />}
+                        checkedIcon={<StarIcon fontSize="small" />}
+                        size="small"
+                        onClick={e => e.stopPropagation()}
+                      />
+                      <EventIcon fontSize="small" color="info" sx={{ ml: 1 }} />
+                      <Typography noWrap sx={{ ml: 1 }}>
+                        {n.title}
+                      </Typography>
+                    </TaskItem>
+                  ))}
+                  {dayTasks.length + dayNotes.length === 0 && <Typography variant="body2" color="text.secondary" sx={{ mt: 2, fontStyle: 'italic', textAlign: 'center' }}>No items</Typography>}
+                </Box>
+              </CalendarDay>
+            </Grid>
+          );
+        })}
       </Grid>
     </Box>
   );
