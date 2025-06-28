@@ -49,14 +49,19 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password, navigate) => {
     try {
-      console.log('Attempting login with:', email);
+      console.log('[LOGIN] Email:', email);
+      console.log('[LOGIN] Password Length:', password.length);
+      console.log('[LOGIN] Firebase Config:', {
+        apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+        authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN
+      });
 
       if (!auth) {
         throw new Error('Firebase authentication not initialized');
       }
 
       const result = await signInWithEmailAndPassword(auth, email, password);
-      console.log('Login successful:', result.user);
+      console.log('[LOGIN] Success:', result.user);
 
       // Wait for user state to be fully updated
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -75,15 +80,30 @@ export const AuthProvider = ({ children }) => {
             { merge: true }
           );
         } catch (firestoreError) {
-          console.error("Failed to update last login time:", firestoreError);
+          console.error("[LOGIN] Failed to update last login time:", firestoreError);
         }
       }
 
       return result.user;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('[LOGIN] Error:', error);
+
       const errorMessage = getErrorMessage(error);
-      console.error('Translated error:', errorMessage);
+
+      // Handle both user-not-found and invalid-credential cases
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+        console.warn('[LOGIN] Redirecting to registration due to invalid credentials');
+        navigate('/register', {
+          state: {
+            prefillEmail: email,
+            redirectMessage: 'No account found or invalid credentials. Please register to continue.',
+          },
+          replace: true,
+        });
+        return; // Exit early
+      }
+
+      console.error('[LOGIN] Translated error:', errorMessage);
       throw new Error(errorMessage);
     }
   };
@@ -148,53 +168,78 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (email, password, name, navigate) => {
     try {
-      console.log("🔐 Creating user with email and password...");
+      console.log('[REGISTER] Email:', email);
+      console.log('[REGISTER] Password Length:', password.length);
+      console.log('[REGISTER] Name:', name);
+
+      if (!auth) {
+        throw new Error('Firebase authentication not initialized');
+      }
+
       const result = await createUserWithEmailAndPassword(auth, email, password);
-  
-      if (!result.user || !result.user.uid) {
-        throw new Error("No user ID returned from Firebase Auth");
+      console.log('[REGISTER] User created:', result.user);
+
+      // Update user profile with name
+      if (name) {
+        await updateProfile(result.user, {
+          displayName: name
+        });
       }
-  
-      console.log("👤 Updating user profile with displayName:", name);
-      await updateProfile(result.user, { displayName: name });
-  
-      try {
-        console.log("📝 Writing user data to Firestore...");
-        await setDoc(
-          doc(db, "users", result.user.uid),
-          {
-            name,
-            email,
-            createdAt: new Date(),
-            lastLogin: new Date(),
-          },
-          { merge: true }
-        );
-      } catch (firestoreError) {
-        // If Firestore fails, we still want to redirect to login
-        console.error(" Firestore error (but registration successful):", firestoreError);
-      }
-  
-      console.log("✅ Registration successful for:", email);
-      // Redirect to login page with success message
+
+      // Create user document in Firestore
+      await setDoc(doc(db, "users", result.user.uid), {
+        email,
+        name,
+        createdAt: new Date(),
+        lastLogin: new Date()
+      });
+
+      // Redirect to login with success message and pre-filled email
       navigate('/login', { 
         state: { 
-          successMessage: "Registration successful! Please log in with your credentials." 
-        }
+          successMessage: "Registration successful! Please log in with your credentials.",
+          prefillEmail: email
+        },
+        replace: true
       });
+
+      return result.user;
     } catch (error) {
       console.error("🔥 Registration crash:", error.code, error.message);
-      throw new Error(getErrorMessage(error));
+
+      const friendlyMessage = getErrorMessage(error);
+
+      // Special case: email already in use
+      if (error.code === 'auth/email-already-in-use') {
+        console.log("[REGISTER] Email already exists. Redirecting to login with prefill...");
+
+        navigate('/login', {
+          state: {
+            successMessage: "You're already registered! Please log in below.",
+            prefillEmail: email
+          },
+          replace: true
+        });
+
+        return; // Don't continue further
+      }
+
+      throw new Error(friendlyMessage);
     }
   };
-  
 
-  const logout = async () => {
+  const logout = async (navigateFn) => {
     try {
       if (!auth) {
         throw new Error('Firebase authentication not initialized');
       }
       await signOut(auth);
+      // Clear any local storage/session data if needed
+      localStorage.removeItem('user');
+      // If navigate function is provided, use it
+      if (navigateFn && typeof navigateFn === 'function') {
+        navigateFn('/login', { replace: true });
+      }
     } catch (error) {
       console.error('Logout error:', error);
       throw new Error(getErrorMessage(error));
