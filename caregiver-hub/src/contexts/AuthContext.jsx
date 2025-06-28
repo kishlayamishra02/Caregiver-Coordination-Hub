@@ -1,11 +1,11 @@
-import React from 'react';
-import { createContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../firebase';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
-const auth = getAuth();
-const googleProvider = new GoogleAuthProvider();
+const AuthContext = createContext(null);
 
 // Function to translate Firebase error codes to user-friendly messages
 const getErrorMessage = (error) => {
@@ -31,21 +31,18 @@ const getErrorMessage = (error) => {
   }
 };
 
-export const AuthContext = createContext(null);
-
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      console.log('Auth state changed:', user);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
     });
 
     return unsubscribe;
-  }, [auth]);
+  }, []);
 
   const login = async (email, password, navigate) => {
     try {
@@ -111,6 +108,8 @@ export const AuthProvider = ({ children }) => {
   const loginWithGoogle = async (navigate) => {
     try {
       console.log('Attempting Google login');
+
+      const googleProvider = new GoogleAuthProvider();
 
       if (!auth) {
         throw new Error('Firebase authentication not initialized');
@@ -277,13 +276,13 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => {
-  const context = React.useContext(AuthContext);
+  const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }

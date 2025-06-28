@@ -52,10 +52,6 @@ const StyledDrawer = styled(Drawer)(({ theme, open }) => ({
     borderRight: 'none',
     boxShadow: theme.shadows[10],
     overflowX: 'hidden',
-    transition: theme.transitions.create('width', {
-      easing: theme.transitions.easing.easeInOut,
-      duration: theme.transitions.duration.standard,
-    }),
   },
 }));
 
@@ -99,7 +95,7 @@ const StyledListItem = styled(ListItem)(({ theme, selected }) => ({
   transition: 'all 0.3s ease',
 }));
 
-export default function Sidebar({ open, onClose }) {
+export default function Sidebar({ open }) {
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
@@ -114,7 +110,7 @@ export default function Sidebar({ open, onClose }) {
   };
 
   return (
-    <StyledDrawer variant="permanent" open={open}>
+    <StyledDrawer variant="permanent" open>
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <Toolbar>
           <LogoContainer>
@@ -136,20 +132,6 @@ export default function Sidebar({ open, onClose }) {
             </Avatar>
             <LogoText variant="h6">Caregiver Hub</LogoText>
           </LogoContainer>
-          <IconButton 
-            onClick={onClose} 
-            sx={{ 
-              color: theme.palette.mode === 'dark' ? theme.palette.text.primary : '#fff',
-              position: 'absolute',
-              right: 8,
-              top: 8,
-              '&:hover': {
-                backgroundColor: alpha(theme.palette.mode === 'dark' ? '#fff' : '#000', 0.1),
-              }
-            }}
-          >
-            <ChevronLeftIcon />
-          </IconButton>
         </Toolbar>
 
         <Divider sx={{ 

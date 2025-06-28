@@ -67,24 +67,6 @@ export default function Header({ onToggleSidebar, open }) {
         px: 3,
       }}>
         <Stack direction="row" alignItems="center" spacing={2}>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            onClick={onToggleSidebar}
-            edge="start"
-            sx={{ 
-              mr: 2,
-              color: theme.palette.text.primary,
-              transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-              transition: theme.transitions.create('transform', {
-                duration: theme.transitions.duration.standard,
-                easing: theme.transitions.easing.easeInOut,
-              }),
-            }}
-          >
-            <MenuIcon />
-          </IconButton>
-          
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Avatar
               sx={{
