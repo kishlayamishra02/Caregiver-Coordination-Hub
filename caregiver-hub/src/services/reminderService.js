@@ -1,221 +1,294 @@
 import { getAuth } from 'firebase/auth';
 import { db } from '../firebase';
-import { doc, getDoc, query, where, collection, onSnapshot } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  query,
+  where,
+  collection,
+  onSnapshot,
+  getDocs
+} from 'firebase/firestore';
 
-const scheduledReminders = new Set();
+const scheduledReminders = new Map(); // Use Map to track timeouts
 
-// Helper function to show notifications
+// 🔔 Show browser or fallback notification
 const showNotification = (title, body, type) => {
   try {
+    if (!Notification) {
+      console.error('Notification API not supported');
+      throw new Error('Notification API not supported in this browser');
+    }
+
+    if (Notification.permission === 'denied') {
+      console.error('Notifications are blocked');
+      throw new Error('Notifications are blocked. Please allow notifications in your browser settings.');
+    }
+
     if (Notification.permission === 'granted') {
-      console.log('Showing notification:', title, body);
+      console.log('🔔 Showing browser notification:', title);
       new Notification(title, {
         body,
-        icon: '/logo192.png'
+        icon: '/logo192.png',
+        tag: type,
+        requireInteraction: true,
+        data: { type }
       });
     } else {
-      console.log('Notification permission not granted');
+      console.warn('[Reminder] Browser notifications not allowed, falling back to snackbar');
+      window.dispatchEvent(new CustomEvent('fallback-snackbar', {
+        detail: {
+          message: `${title} - ${body}`,
+          severity: 'info'
+        }
+      }));
     }
   } catch (error) {
-    console.error('Error showing notification:', error);
+    console.error('⚠️ Error showing notification:', error);
+    window.dispatchEvent(new CustomEvent('fallback-snackbar', {
+      detail: {
+        message: `Notification failed: ${error.message}`,
+        severity: 'error'
+      }
+    }));
   }
 };
 
-// Function to schedule reminders with timeouts
-const scheduleReminder = (item, dueDate, type) => {
+// Test reminder for debugging
+export const testReminder = () => {
+  console.log('🧪 Testing reminder system...');
+  
+  // Test notification permission
+  console.log('Permission:', Notification.permission);
+  
+  // Test browser notification
+  showNotification(
+    'Test Reminder',
+    'This is a test reminder at ' + new Date().toLocaleString(),
+    'test'
+  );
+  
+  // Test fallback snackbar
+  window.dispatchEvent(new CustomEvent("fallback-snackbar", {
+    detail: {
+      message: "🔔 This is a test reminder fallback",
+      severity: "info"
+    }
+  }));
+};
+
+// ⏰ Schedule reminders at 5 min, 1 min, due-now
+export const scheduleReminder = (item, dueDate, type) => {
   const id = `${type}-${item.id}`;
   if (scheduledReminders.has(id)) {
-    console.log('Reminder already scheduled:', id);
+    console.log('⏱️ Reminder already scheduled:', id);
     return;
   }
 
-  console.log('Scheduling reminder for:', item.title, 'due at:', dueDate);
+  console.log('📅 Scheduling reminder for:', item.title, '| Due:', dueDate.toLocaleString());
+  const now = Date.now();
 
-  const now = new Date();
-  const timeUntilDue = dueDate - now;
+  const timeouts = [
+    { label: '5-min', offset: 5 * 60 * 1000 },
+    { label: '1-min', offset: 1 * 60 * 1000 },
+    { label: 'due-now', offset: 0 }
+  ];
 
-  if (timeUntilDue > 0) {
-    // Schedule 5 min, 1 min, and at due
-    const timeouts = [
-      { label: '5-min', offset: 5 * 60 * 1000 },
-      { label: '1-min', offset: 1 * 60 * 1000 },
-      { label: 'due-now', offset: 0 }
-    ];
+  const timeoutIds = [];
 
-    timeouts.forEach(({ label, offset }) => {
-      const timeToTrigger = dueDate - offset - now;
+  timeouts.forEach(({ label, offset }) => {
+    const triggerTime = dueDate.getTime() - offset;
+    const timeToTrigger = triggerTime - now;
 
-      if (timeToTrigger > 0) {
-        console.log('Scheduling', label, 'notification in', timeToTrigger/1000, 'seconds');
-        setTimeout(() => {
-          console.log('Triggering', label, 'notification for:', item.title);
-          showNotification(
-            `${type === 'task' ? 'Task' : 'Note'} Reminder: ${item.title}`,
-            `This ${type} is due ${label.replace('-', ' ')}: ${dueDate.toLocaleString()}`,
-            label
-          );
-        }, timeToTrigger);
+    if (timeToTrigger > 0) {
+      console.log(`⏰ Will trigger '${label}' in ${Math.round(timeToTrigger / 1000)}s`);
+
+      const timeoutId = setTimeout(() => {
+        console.log(`⏰ Timeout triggered for '${label}' - ${item.title}`);
+        console.log(`🔔 Triggering '${label}' for: ${item.title}`);
+        showNotification(
+          `${type === 'task' ? 'Task' : 'Note'} Reminder: ${item.title}`,
+          `This ${type} is due ${label.replace('-', ' ')} at ${dueDate.toLocaleString()}`,
+          label
+        );
+      }, timeToTrigger);
+
+      timeoutIds.push(timeoutId);
+    } else if (label === 'due-now' && timeToTrigger > -60 * 1000) {
+      // Allow 'due-now' to fire if it's less than 1 minute old
+      console.log(`⏰ (Late) Scheduling 'due-now' for: ${item.title} (delayed by 1s)`);
+      
+      const timeoutId = setTimeout(() => {
+        console.log(`⏰ (Late) Triggering 'due-now' for: ${item.title}`);
+        showNotification(
+          `${type === 'task' ? 'Task' : 'Note'} Reminder: ${item.title}`,
+          `This ${type} is due NOW at ${dueDate.toLocaleString()}`,
+          'due-now'
+        );
+      }, 1000); // Small delay to prevent blocking
+
+      timeoutIds.push(timeoutId);
+    } else {
+      console.log(`❌ Skipping '${label}' for: ${item.title} (already passed)`);
+    }
+  });
+
+  scheduledReminders.set(id, { timeoutIds });
+};
+
+// 🧹 Clear all scheduled timeouts
+const cleanupReminders = () => {
+  console.log('🧹 Cleaning up all reminders...');
+  scheduledReminders.forEach(({ timeoutIds }) => {
+    timeoutIds.forEach(clearTimeout);
+  });
+  scheduledReminders.clear();
+  console.log('🧹 All reminders cleaned up');
+};
+
+// 🧼 Helper to clear a specific reminder
+const cleanupOne = (id) => {
+  if (scheduledReminders.has(id)) {
+    const { timeoutIds } = scheduledReminders.get(id);
+    timeoutIds.forEach(clearTimeout);
+    scheduledReminders.delete(id);
+    console.log('🧹 Cleared reminder:', id);
+  }
+};
+
+// 🔁 Check and schedule missed/overdue items
+const checkAndTriggerOverdueReminders = async () => {
+  const auth = getAuth();
+  if (!auth.currentUser) return;
+
+  const userId = auth.currentUser.uid;
+  console.log('🔍 Checking overdue reminders for user:', userId);
+
+  try {
+    const tasksSnapshot = await getDocs(
+      query(collection(db, 'tasks'),
+        where('userId', '==', userId),
+        where('completed', '==', false))
+    );
+
+    const notesSnapshot = await getDocs(
+      query(collection(db, 'notes'),
+        where('userId', '==', userId),
+        where('reminderDate', '!=', null),
+        where('completed', '==', false))
+    );
+
+    // Tasks
+    tasksSnapshot.forEach(doc => {
+      const task = { id: doc.id, ...doc.data() };
+      const dueDate = task.dueDate?.toDate();
+      if (dueDate && !task.completed) {
+        scheduleReminder(task, dueDate, 'task');
       }
     });
 
-    scheduledReminders.add(id);
-  }
-};
+    // Notes
+    notesSnapshot.forEach(doc => {
+      const note = { id: doc.id, ...doc.data() };
+      const reminderDate = note.reminderDate?.toDate();
+      if (reminderDate && !note.completed) {
+        scheduleReminder(note, reminderDate, 'note');
+      }
+    });
 
-export const initializeReminderService = async () => {
-  const auth = getAuth();
-  
-  try {
-    // Request permission for notifications
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-      console.log('Notification permission granted');
-    } else {
-      console.log('Notification permission denied');
-    }
   } catch (error) {
-    console.error('Error requesting notification permission:', error);
+    console.error('⚠️ Error checking overdue reminders:', error);
   }
 };
 
+// 🤖 Initialize reminder service
+export const initializeReminderService = async () => {
+  try {
+    console.log('🤖 Initializing reminder service...');
+    
+    // Request notification permission first
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      console.warn('Notification permission not granted');
+      throw new Error('Notification permission not granted');
+    }
+
+    // Start real-time listener
+    await startReminderListener();
+    
+    // Check for overdue reminders
+    await checkAndTriggerOverdueReminders();
+    
+    console.log('✅ Reminder service initialized successfully');
+  } catch (error) {
+    console.error('❌ Failed to initialize reminder service:', error);
+    throw error;
+  }
+};
+
+// 📡 Real-time Firestore listeners
 export const startReminderListener = () => {
   const auth = getAuth();
-  
-  if (auth.currentUser) {
-    const userId = auth.currentUser.uid;
-    console.log('Starting reminder listener for user:', userId);
+  const user = auth.currentUser;
+  if (!user) return;
 
-    // Listen for tasks
-    const tasksQuery = query(
-      collection(db, 'tasks'),
-      where('userId', '==', userId), // Changed from assignedTo to userId
-      where('completed', '==', false)
-    );
+  const userId = user.uid;
+  console.log('📡 Starting live reminder listeners for:', userId);
 
-    // Listen for notes
-    const notesQuery = query(
-      collection(db, 'notes'),
-      where('userId', '==', userId),
-      where('reminderDate', '!=', null),
-      where('completed', '==', false)
-    );
+  const tasksQuery = query(
+    collection(db, 'tasks'),
+    where('userId', '==', userId),
+    where('completed', '==', false)
+  );
 
-    // Handle tasks
-    onSnapshot(tasksQuery, async (snapshot) => {
-      console.log('Task snapshot received:', snapshot.docChanges().length, 'changes');
-      snapshot.docChanges().forEach(async (change) => {
-        if (change.type === 'added' || change.type === 'modified') {
-          const task = change.doc.data();
-          console.log('Processing task:', task.title, 'due at:', task.dueDate?.toDate());
-          const dueDate = task.dueDate?.toDate();
-          
-          if (dueDate && !task.completed) {
-            scheduleReminder(task, dueDate, 'task');
-          }
-        }
-      });
-    });
+  const notesQuery = query(
+    collection(db, 'notes'),
+    where('userId', '==', userId),
+    where('reminderDate', '!=', null),
+    where('completed', '==', false)
+  );
 
-    // Handle notes
-    onSnapshot(notesQuery, async (snapshot) => {
-      console.log('Note snapshot received:', snapshot.docChanges().length, 'changes');
-      snapshot.docChanges().forEach(async (change) => {
-        if (change.type === 'added' || change.type === 'modified') {
-          const note = change.doc.data();
-          console.log('Processing note:', note.title, 'reminder at:', note.reminderDate?.toDate());
-          const reminderDate = note.reminderDate?.toDate();
-          
-          if (reminderDate && !note.completed) {
-            scheduleReminder(note, reminderDate, 'note');
-          }
-        }
-      });
-    });
-  }
-};
+  onSnapshot(tasksQuery, snapshot => {
+    snapshot.docChanges().forEach(change => {
+      const task = { id: change.doc.id, ...change.doc.data() };
+      const dueDate = task.dueDate?.toDate();
 
-export const sendWeeklySummary = async () => {
-  const auth = getAuth();
-  
-  if (auth.currentUser) {
-    const userId = auth.currentUser.uid;
-    const userDoc = await getDoc(doc(db, 'users', userId));
-    const userEmail = userDoc.data().email;
-    
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    
-    const tasksSnapshot = await getDocs(
-      query(
-        collection(db, 'tasks'),
-        where('userId', '==', userId),
-        where('createdAt', '>=', weekAgo)
-      )
-    );
-    
-    const tasks = tasksSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      dueDate: doc.data().dueDate?.toDate()
-    }));
-    
-    // Group tasks by status
-    const completedTasks = tasks.filter(t => t.completed);
-    const overdueTasks = tasks.filter(t => !t.completed && new Date() > t.dueDate);
-    const upcomingTasks = tasks.filter(t => !t.completed && new Date() < t.dueDate);
-    
-    // Send summary email
-    await sendEmailNotification(userEmail, {
-      title: 'Weekly Summary',
-      description: 'Your weekly task summary',
-      completedTasks,
-      overdueTasks,
-      upcomingTasks
-    }, 'summary');
-  }
-};
-
-const sendEmailNotification = async (email, data, type) => {
-  // Implement email sending logic here
-};
-
-const sendReminderNotification = async (task, type) => {
-  // This function is no longer used, but kept for reference
-  const messaging = getMessaging();
-  const auth = getAuth();
-  
-  if (auth.currentUser) {
-    try {
-      const message = {
-        notification: {
-          title: `Task Reminder: ${task.title}`,
-          body: `This task is due soon: ${task.dueDate.toDate().toLocaleString()}`,
-          icon: '/logo192.png'
-        },
-        data: {
-          type: 'task_reminder',
-          taskId: task.id,
-          userId: auth.currentUser.uid
-        }
-      };
-
-      // Send message to all devices
-      const messagingDevices = await getMessagingDevices(auth.currentUser.uid);
-      for (const device of messagingDevices) {
-        await messaging.sendToDevice(device.token, message);
+      if (change.type === 'removed') {
+        const id = `task-${task.id}`;
+        cleanupOne(id);
+      } else if (dueDate && !task.completed) {
+        scheduleReminder(task, dueDate, 'task');
       }
-    } catch (error) {
-      console.error('Error sending reminder notification:', error);
-    }
-  }
+    });
+  });
+
+  onSnapshot(notesQuery, snapshot => {
+    snapshot.docChanges().forEach(change => {
+      const note = { id: change.doc.id, ...change.doc.data() };
+      const reminderDate = note.reminderDate?.toDate();
+
+      if (change.type === 'removed') {
+        const id = `note-${note.id}`;
+        cleanupOne(id);
+      } else if (reminderDate && !note.completed) {
+        scheduleReminder(note, reminderDate, 'note');
+      }
+    });
+  });
+
+  // Optional: clear reminders when closing tab
+  window.addEventListener('beforeunload', cleanupReminders);
 };
 
-const getMessagingDevices = async (userId) => {
-  // This function is no longer used, but kept for reference
-  const devicesRef = collection(db, 'users', userId, 'devices');
-  const snapshot = await getDocs(devicesRef);
-  return snapshot.docs.map(doc => ({
-    token: doc.data().token,
-    platform: doc.data().platform
-  }));
-};
+// 🔄 Recheck reminders on tab regain focus
+window.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    console.log('🔁 Tab became visible – checking reminders');
+    checkAndTriggerOverdueReminders();
+  }
+});
+
+window.addEventListener('focus', () => {
+  console.log('🔁 Tab focused – checking reminders');
+  checkAndTriggerOverdueReminders();
+});

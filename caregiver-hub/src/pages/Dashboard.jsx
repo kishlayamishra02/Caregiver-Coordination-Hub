@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import {
   Box, Grid, Card, CardContent, Typography, Avatar, useTheme, styled, alpha,
-  Container, Tooltip, Divider, Chip, useMediaQuery, Badge
+  Container, Divider, Chip, useMediaQuery, Badge
 } from '@mui/material';
 import {
   Task, CalendarToday, NoteAdd, Check, Warning, PriorityHigh, 
@@ -15,6 +15,7 @@ import {
 import { db } from '../firebase';
 import { collection, query, where, getDocs, orderBy, Timestamp, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
+import { initializeReminderService } from '../services/reminderService';
 
 const DashboardContainer = styled(Container)(({ theme }) => ({
   padding: theme.spacing(4),
@@ -107,7 +108,7 @@ export default function Dashboard() {
 
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const [stats, setStats] = useState({
     totalTasks: 0,
     completedTasks: 0,
@@ -124,6 +125,24 @@ export default function Dashboard() {
     overdueTasks: [],
     upcomingTitles: []
   });
+
+  useEffect(() => {
+    const initServices = async () => {
+      try {
+        // Initialize reminder service
+        await initializeReminderService();
+      } catch (err) {
+        console.error('Failed to initialize services:', err);
+        setError('Failed to initialize services. Please refresh the page.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      initServices();
+    }
+  }, [user]);
 
   useEffect(() => {
     let unsubscribeTasks;
@@ -242,13 +261,8 @@ export default function Dashboard() {
     }
   }, [user]);
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (error) {
-    return <div>Error: {error}</div>;
-  }
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <DashboardContainer maxWidth={false}>
