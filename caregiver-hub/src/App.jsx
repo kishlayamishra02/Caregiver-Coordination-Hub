@@ -5,16 +5,14 @@ import { CssBaseline } from '@mui/material';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { AuthProvider } from './contexts/AuthContext';
+
 import { initializeReminderService, startReminderListener } from './services/reminderService';
-import { AuthProvider, AuthContext } from './contexts/AuthContext';
 import { messaging } from './firebase';
-import { CssBaseline, Box } from '@mui/material';
+
+// Layouts & Routes
 import Layout from './components/Layout';
 import PrivateRoute from './components/PrivateRoute';
 import TestReminder from './components/TestReminder';
-
-import Layout from './components/Layout';
-import RequireAuth from './components/RequireAuth'; // 👈 Add this import
 
 // Pages
 import Dashboard from './pages/Dashboard';
@@ -55,7 +53,7 @@ function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password/:token" element={<ResetPassword />} />
-              
+
               {/* Protected Routes */}
               <Route element={<PrivateRoute />}>
                 <Route element={<Layout />}>
@@ -67,9 +65,10 @@ function App() {
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/signout" element={<SignOut />} />
+                  <Route path="/test-reminder" element={<TestReminder />} />
                 </Route>
               </Route>
-              
+
               {/* Fallback Route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
