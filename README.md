@@ -46,16 +46,14 @@ We built this platform to solve three key problems:
 ### 📅 Unified Care Calendar
 <div align="center">
   <img src="https://raw.githubusercontent.com/Arjit74/Caregiver-Coordination-Hub/main/assets/Calenderpic.png" width="600" alt="Calendar Screenshot"/>
-</div>  
-_Color-coded events with drag-and-drop rescheduling_
+</div> 
 
 ---
 
 ### 💊 Medication Tracker
 <div align="center">
   <img src="https://raw.githubusercontent.com/Arjit74/Caregiver-Coordination-Hub/main/assets/Medication_Tasks.png" width="600" alt="Medication Screenshot"/>
-</div>  
-_Dosage reminders with confirmation logging_
+</div> 
 
 ---
 
