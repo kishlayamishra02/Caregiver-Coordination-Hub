@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Circle } from '@mui/icons-material';
 import { 
   Box, 
@@ -9,11 +9,13 @@ import {
   Paper,
   Divider,
   IconButton,
-  InputAdornment
+  InputAdornment,
+  Alert
 } from '@mui/material';
 import { 
   Link, 
-  useNavigate 
+  useNavigate,
+  useLocation 
 } from 'react-router-dom';
 import { 
   Person, 
@@ -58,35 +60,44 @@ const PasswordRequirement = styled(Typography)(({ valid, theme }) => ({
 }));
 
 export default function Register() {
+  const location = useLocation();
   const navigate = useNavigate();
   const { register } = useAuth();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
+
+  const prefillEmail = location?.state?.prefillEmail || '';
+  const redirectMessage = location?.state?.redirectMessage || '';
+
+  const [email, setEmail] = useState(prefillEmail);
+  const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const passwordValid = formData.password.length >= 6;
-  const passwordsMatch = formData.password === formData.confirmPassword && formData.password !== '';
+  const nameInputRef = useRef(null);
+
+  useEffect(() => {
+    // Auto-focus name field on mount
+    if (nameInputRef.current) {
+      nameInputRef.current.focus();
+    }
+    // Auto-focus name field if redirected
+    if (redirectMessage) {
+      nameInputRef.current?.focus();
+    }
+  }, [redirectMessage]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.name.trim() || !formData.email.trim() || !formData.password.trim()) {
+    if (!email.trim() || !password.trim() || !confirmPassword.trim() || !name.trim()) {
       setError('Please fill in all fields');
       return;
     }
 
-    if (!passwordValid) {
-      setError('Password must be at least 6 characters long');
-      return;
-    }
-
-    if (!passwordsMatch) {
+    if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
@@ -95,32 +106,16 @@ export default function Register() {
     setError('');
 
     try {
-      await register(formData.email, formData.password, formData.name);
-      navigate('/login', { state: { successMessage: 'Registration successful! Please login.' } });
-    } catch (err) {
-      console.error('Registration error:', err);
-      setError(err.message || 'Failed to register. Please try again.');
+      await register(email, password, name, navigate); // ✅ plain string
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Registration failed');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
-  };
-
   return (
-    <Box sx={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'radial-gradient(circle at 10% 20%, rgba(236, 239, 249, 0.8) 0%, rgba(255, 255, 255, 1) 90%)',
-      p: 2
-    }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at 10% 20%, rgba(236, 239, 249, 0.8) 0%, rgba(255, 255, 255, 1) 90%)', p: 2 }}>
       <AuthContainer>
         <IconButton 
           onClick={() => navigate(-1)} 
@@ -130,13 +125,24 @@ export default function Register() {
         </IconButton>
 
         <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+          <Typography variant="h4" gutterBottom>
             Create Account
           </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Join Caregiver Hub today
+          <Typography variant="body2" color="text.secondary">
+            Already have an account?{' '}
+            <Link to="/login" style={{ textDecoration: 'none' }}>
+              <Typography variant="body2" color="primary">
+                Sign in
+              </Typography>
+            </Link>
           </Typography>
         </Box>
+
+        {redirectMessage && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            {redirectMessage}
+          </Alert>
+        )}
 
         {error && (
           <Typography 
@@ -152,20 +158,21 @@ export default function Register() {
               gap: 1
             }}
           >
-            <Error fontSize="small" />
+            <Circle fontSize="small" />
             {error}
           </Typography>
         )}
 
-        <Box component="form" onSubmit={handleSubmit}>
+        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
           <TextField
             fullWidth
             label="Full Name"
             margin="normal"
             name="name"
-            value={formData.name}
-            onChange={handleChange}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             required
+            autoFocus
             disabled={loading}
             InputProps={{
               startAdornment: (
@@ -180,11 +187,10 @@ export default function Register() {
             fullWidth
             label="Email Address"
             margin="normal"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
+            type="email"
             disabled={loading}
             InputProps={{
               startAdornment: (
@@ -196,12 +202,13 @@ export default function Register() {
           />
 
           <TextField
+            id="password"
             fullWidth
             label="Password"
             margin="normal"
             name="password"
-            value={formData.password}
-            onChange={handleChange}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             type={showPassword ? 'text' : 'password'}
             required
             disabled={loading}
@@ -222,11 +229,13 @@ export default function Register() {
                 </InputAdornment>
               ),
             }}
+            error={!!password && password.length < 6}
+            helperText={!!password && password.length < 6 ? 'At least 6 characters' : ''}
           />
 
           <Box sx={{ mb: 2, pl: 1 }}>
-            <PasswordRequirement valid={passwordValid}>
-              {passwordValid ? <CheckCircle fontSize="small" /> : <Circle fontSize="small" />}
+            <PasswordRequirement valid={password.length >= 6}>
+              {password.length >= 6 ? <Circle fontSize="small" /> : <Circle fontSize="small" />}
               At least 6 characters
             </PasswordRequirement>
           </Box>
@@ -236,9 +245,9 @@ export default function Register() {
             label="Confirm Password"
             margin="normal"
             name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            type={showPassword ? 'text' : 'password'}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            type={showConfirmPassword ? 'text' : 'password'}
             required
             disabled={loading}
             InputProps={{
@@ -247,9 +256,19 @@ export default function Register() {
                   <Lock color="action" />
                 </InputAdornment>
               ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    edge="end"
+                  >
+                    {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
             }}
-            error={!!formData.confirmPassword && !passwordsMatch}
-            helperText={!!formData.confirmPassword && !passwordsMatch ? 'Passwords do not match' : ''}
+            error={!!confirmPassword && password !== confirmPassword}
+            helperText={!!confirmPassword && password !== confirmPassword ? 'Passwords do not match' : ''}
           />
 
           <Button
@@ -258,7 +277,7 @@ export default function Register() {
             variant="contained"
             sx={{ mt: 3, py: 1.5 }}
             type="submit"
-            disabled={loading || !formData.name.trim() || !formData.email.trim() || !formData.password.trim() || !passwordsMatch}
+            disabled={loading || !email.trim() || !password.trim() || !confirmPassword.trim() || !name.trim() || password !== confirmPassword}
           >
             {loading ? (
               <>

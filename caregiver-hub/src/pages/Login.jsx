@@ -1,24 +1,22 @@
-import React, { useState } from 'react';
-import { 
-  Box, 
-  TextField, 
-  Button, 
-  Typography, 
-  CircularProgress, 
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  CircularProgress,
   Paper,
   Divider,
   IconButton,
-  InputAdornment
+  InputAdornment,
+  Link
 } from '@mui/material';
-import { 
-  Link, 
-  useNavigate, 
-  useLocation 
-} from 'react-router-dom';
-import { 
-  Email, 
-  Lock, 
-  Visibility, 
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  Email,
+  Lock,
+  Visibility,
   VisibilityOff,
   ArrowBack,
   Google
@@ -78,19 +76,29 @@ const GoogleButton = styled(Button)(({ theme }) => ({
 }));
 
 export default function Login() {
-  const [email, setEmail] = useState('');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { login, loginWithGoogle } = useAuth();
+
+  const prefillEmail = location?.state?.prefillEmail || '';
+  const successMessage = location.state?.successMessage;
+
+  const [email, setEmail] = useState(prefillEmail);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, loginWithGoogle } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const successMessage = location.state?.successMessage;
+  const passwordRef = useRef();
+
+  useEffect(() => {
+    if (prefillEmail && passwordRef.current) {
+      passwordRef.current.focus();
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!email.trim() || !password.trim()) {
       setError('Please fill in all fields');
       return;
@@ -100,12 +108,10 @@ export default function Login() {
     setError('');
 
     try {
-      console.log('Attempting login with email:', email);
       await login(email, password, navigate);
-      console.log('Login successful, redirecting to dashboard');
-    } catch (err) {
-      console.error('Login error:', err);
-      setError(err.message || 'Failed to login. Please check your credentials.');
+    } catch (error) {
+      console.error('Login error:', error);
+      setError(error instanceof Error ? error.message : 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -121,8 +127,8 @@ export default function Login() {
       p: 2
     }}>
       <AuthContainer>
-        <IconButton 
-          onClick={() => navigate(-1)} 
+        <IconButton
+          onClick={() => navigate(-1)}
           sx={{ position: 'absolute', left: 16, top: 16 }}
         >
           <ArrowBack />
@@ -138,29 +144,19 @@ export default function Login() {
         </Box>
 
         {successMessage && (
-          <Typography 
-            color="success.main" 
-            variant="body2" 
-            sx={{ 
-              mb: 2,
-              p: 1.5,
-              borderRadius: 1,
-              bgcolor: 'success.lighter',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1
-            }}
-          >
-            <CheckCircle fontSize="small" />
-            {successMessage}
-          </Typography>
+          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CheckCircleIcon fontSize="small" color="success" />
+            <Typography variant="body2" color="success.main">
+              {successMessage}
+            </Typography>
+          </Box>
         )}
 
         {error && (
-          <Typography 
-            color="error.main" 
-            variant="body2" 
-            sx={{ 
+          <Typography
+            color="error.main"
+            variant="body2"
+            sx={{
               mb: 2,
               p: 1.5,
               borderRadius: 1,
@@ -180,6 +176,7 @@ export default function Login() {
             fullWidth
             label="Email Address"
             margin="normal"
+            name="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -198,11 +195,13 @@ export default function Login() {
             fullWidth
             label="Password"
             margin="normal"
-            type={showPassword ? 'text' : 'password'}
+            name="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            type={showPassword ? 'text' : 'password'}
             required
             disabled={loading}
+            inputRef={passwordRef}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -257,8 +256,8 @@ export default function Login() {
           <GoogleButton
             fullWidth
             size="large"
-            sx={{ 
-              mt: 2, 
+            sx={{
+              mt: 2,
               py: 1.5,
               display: 'flex',
               alignItems: 'center',
