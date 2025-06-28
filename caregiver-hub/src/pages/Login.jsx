@@ -117,6 +117,18 @@ export default function Login() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true);
+      await loginWithGoogle(navigate);
+    } catch (error) {
+      console.error('Google login error:', error);
+      setError(error instanceof Error ? error.message : 'Google sign-in failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Box sx={{
       minHeight: '100vh',
@@ -268,7 +280,7 @@ export default function Login() {
               }
             }}
             startIcon={<Google sx={{ fontSize: 24 }} />}
-            onClick={() => loginWithGoogle(navigate)}
+            onClick={handleGoogleLogin}
             disabled={loading}
           >
             Continue with Google

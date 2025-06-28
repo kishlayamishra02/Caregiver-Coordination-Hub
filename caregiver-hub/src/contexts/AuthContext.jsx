@@ -116,6 +116,13 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Firebase authentication not initialized');
       }
 
+      // Configure Google provider with required scopes
+      googleProvider.setCustomParameters({
+        prompt: 'select_account',
+        hd: 'gmail.com' // Optional: restrict to Gmail accounts
+      });
+
+      // Try to sign in with Google
       const result = await signInWithPopup(auth, googleProvider);
       console.log('Google login successful:', result.user);
 
@@ -125,7 +132,7 @@ export const AuthProvider = ({ children }) => {
       // Try to update user profile
       try {
         await updateProfile(result.user, {
-          displayName: result.user.displayName,
+          displayName: result.user.displayName || 'Google User',
           photoURL: result.user.photoURL
         });
       } catch (profileError) {
@@ -139,16 +146,18 @@ export const AuthProvider = ({ children }) => {
 
         if (!userSnap.exists()) {
           await setDoc(userDoc, {
-            name: result.user.displayName,
+            name: result.user.displayName || 'Google User',
             email: result.user.email,
             photoURL: result.user.photoURL,
             createdAt: new Date(),
             lastLogin: new Date(),
-            provider: 'google'
+            provider: 'google',
+            isGoogleUser: true
           });
         } else {
           await updateDoc(userDoc, {
-            lastLogin: new Date()
+            lastLogin: new Date(),
+            provider: 'google'
           });
         }
       } catch (firestoreError) {
@@ -160,6 +169,16 @@ export const AuthProvider = ({ children }) => {
       return result.user;
     } catch (error) {
       console.error('Google login error:', error);
+      
+      // Handle specific Google auth errors
+      if (error.code === 'auth/popup-closed-by-user') {
+        throw new Error('Login window was closed. Please try again.');
+      } else if (error.code === 'auth/popup-blocked') {
+        throw new Error('Popup was blocked. Please allow popups for this site.');
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        throw new Error('Login was cancelled. Please try again.');
+      }
+
       const errorMessage = getErrorMessage(error);
       console.error('Translated error:', errorMessage);
       throw new Error(errorMessage);
