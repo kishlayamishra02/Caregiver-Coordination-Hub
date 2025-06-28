@@ -1,16 +1,16 @@
-import React, { useEffect, useContext } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { getToken, onMessage } from "firebase/messaging";
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { CssBaseline } from '@mui/material';
+
 import { ThemeProvider } from './contexts/ThemeContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { AuthProvider } from './contexts/AuthContext';
 import { initializeReminderService, startReminderListener } from './services/reminderService';
-import { AuthProvider, AuthContext } from './contexts/AuthContext';
-import { messaging } from './firebase';
-import { CssBaseline, Box } from '@mui/material';
-import Layout from './components/Layout';
-import TestReminder from './components/TestReminder';
 
-// Import your pages
+import Layout from './components/Layout';
+import RequireAuth from './components/RequireAuth'; // 👈 Add this import
+
+// Pages
 import Dashboard from './pages/Dashboard';
 import Calendar from './pages/Calendar';
 import Notes from './pages/Notes';
@@ -44,12 +44,18 @@ function App() {
           <CssBaseline />
           <Router>
             <Routes>
+              {/* Public Routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password/:token" element={<ResetPassword />} />
-              
-              <Route element={<Layout />}>
+
+              {/* Protected Routes */}
+              <Route element={
+                <RequireAuth>
+                  <Layout />
+                </RequireAuth>
+              }>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/calendar" element={<Calendar />} />
@@ -59,7 +65,8 @@ function App() {
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/signout" element={<SignOut />} />
               </Route>
-              
+
+              {/* Fallback */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Router>
