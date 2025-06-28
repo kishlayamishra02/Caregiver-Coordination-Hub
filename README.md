@@ -58,12 +58,9 @@ We built this platform to solve three key problems:
 ---
 
 ### 📝 Collaborative Notes
-```markdown
-[12/05] Dr. Smith Visit:
-- BP: 120/80 ✅ 
-- New prescription: Lipitor 10mg
-- Next visit in 3 weeks
-```
+<div align="center">
+  <img src="https://raw.githubusercontent.com/Arjit74/Caregiver-Coordination-Hub/main/assets/Notes.png" width="600" alt="Medication Screenshot"/>
+</div> 
 
 ---
 
@@ -147,7 +144,7 @@ REACT_APP_FIREBASE_APP_ID=your_app_id
 
 | Feature | Status |
 |---------|--------|
-| 📱 Mobile App (React Native) | Planned Q3 2025 |
+| 📱 Mobile App (React Native) | Planned in 2025 |
 | 🗣️ Voice Command Integration | Research Phase |
 | 🌐 Offline Mode | In Design |
 | 👥 Care Team Roles | In Development |
