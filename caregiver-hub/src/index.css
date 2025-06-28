@@ -1,0 +1,279 @@
+/* Root styles */
+:root {
+  --primary-color: #6200EE;
+  --primary-dark: #3700B3;
+  --primary-light: #BB86FC;
+  --secondary-color: #03DAC6;
+  --text-primary: #212121;
+  --text-secondary: #4A4A4A;
+  --background: #F5F7FA;
+  --surface: #FFFFFF;
+  --error: #B00020;
+  --success: #00C853;
+  --warning: #FFAB00;
+  --info: #2962FF;
+  --text-on-dark: #FFFFFF;
+  --text-on-light: #212121;
+  --border-light: rgba(0, 0, 0, 0.12);
+  --border-dark: rgba(255, 255, 255, 0.12);
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background-color: var(--background);
+  color: var(--text-primary);
+}
+
+:root.dark-mode {
+  --primary-color: #BB86FC;
+  --primary-dark: #9A5FC8;
+  --primary-light: #CF94FF;
+  --text-primary: #F5F5F5; /* Brighter text for better visibility */
+  --text-secondary: #B0B0B0; /* More contrast for secondary text */
+  --background: #121212;
+  --surface: #1E1E1E;
+  --error: #CF6679;
+  --success: #69F0AE;
+  --warning: #FFAB00;
+  --info: #82B1FF;
+  --text-on-dark: #F5F5F5;
+  --text-on-light: #212121;
+}
+
+/* Color scheme declaration */
+body.dark-mode {
+  color-scheme: dark;
+  background-color: var(--background);
+  color: var(--text-primary);
+}
+
+body.light-mode {
+  color-scheme: light;
+  background-color: var(--background);
+  color: var(--text-primary);
+}
+
+/* Smooth theme transition */
+body, .MuiPaper-root, .MuiTypography-root, .MuiButton-root, .MuiInputBase-root {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark);
+}
+
+/* Global text selection */
+::selection {
+  background: var(--primary-color);
+  color: var(--text-on-dark);
+}
+
+/* Focus ring styles */
+:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Custom button styles */
+button {
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+/* Custom input styles */
+input, textarea {
+  background-color: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--text-secondary);
+  transition: border-color 0.2s ease;
+}
+
+input:focus, textarea:focus {
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+/* Custom card styles */
+.card {
+  background-color: var(--surface);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+  color: var(--text-primary); /* Ensure text color in cards */
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
+/* Custom heading styles */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary);
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+/* Ensure Material-UI text visibility */
+.MuiTypography-root {
+  color: var(--text-primary) !important;
+}
+
+.MuiTypography-colorTextSecondary {
+  color: var(--text-secondary) !important;
+}
+
+/* Custom link styles */
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--primary-dark);
+}
+
+/* Custom toast notification styles */
+.toast {
+  background-color: var(--surface);
+  border-left: 4px solid var(--primary-color);
+  color: var(--text-primary);
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.toast.success {
+  border-color: var(--success);
+}
+
+.toast.error {
+  border-color: var(--error);
+}
+
+.toast.warning {
+  border-color: var(--warning);
+}
+
+.toast.info {
+  border-color: var(--info);
+}
+
+/* Additional fixes for Material-UI components */
+.MuiInputBase-input {
+  color: var(--text-primary) !important;
+}
+
+.MuiInputLabel-root {
+  color: var(--text-secondary) !important;
+}
+
+.MuiOutlinedInput-notchedOutline {
+  border-color: var(--text-secondary) !important;
+}
+
+.MuiSelect-icon {
+  color: var(--text-secondary) !important;
+}
+
+.MuiChip-root {
+  color: var(--text-primary) !important;
+  background-color: var(--surface) !important;
+}
+
+.MuiDivider-root {
+  background-color: var(--text-secondary) !important;
+}
+
+.MuiListItemText-primary {
+  color: var(--text-primary) !important;
+}
+
+.MuiListItemText-secondary {
+  color: var(--text-secondary) !important;
+}
+
+/* Fix for disabled text */
+.Mui-disabled {
+  color: var(--text-secondary) !important;
+}
+
+/* Fix for table text */
+.MuiTableCell-root {
+  color: var(--text-primary) !important;
+  border-bottom-color: var(--text-secondary) !important;
+}
+
+/* Fix for dialog text */
+.MuiDialogTitle-root, .MuiDialogContentText-root {
+  color: var(--text-primary) !important;
+}
+
+/* Fix for tab text */
+.MuiTab-root {
+  color: var(--text-primary) !important;
+}
+
+/* Fix for menu items */
+.MuiMenuItem-root {
+  color: var(--text-primary) !important;
+}
+
+/* Fix for form helper text */
+.MuiFormHelperText-root {
+  color: var(--text-secondary) !important;
+}
+
+/* Fix for avatar text */
+.MuiAvatar-colorDefault {
+  color: var(--text-primary) !important;
+  background-color: var(--background) !important;
+}
+
+/* Fix for icon colors */
+.MuiSvgIcon-root {
+  color: var(--text-secondary) !important;
+}
+
+.MuiSvgIcon-colorPrimary {
+  color: var(--primary-color) !important;
+}
+
+.MuiSvgIcon-colorSecondary {
+  color: var(--secondary-color) !important;
+}
+
+.MuiSvgIcon-colorAction {
+  color: var(--text-secondary) !important;
+}
+
+/* Fix for switch colors */
+.MuiSwitch-track {
+  background-color: var(--text-secondary) !important;
+}
+
+/* Fix for divider colors */
+.MuiDivider-root {
+  background-color: var(--text-secondary) !important;
+}

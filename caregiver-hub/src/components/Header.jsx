@@ -3,169 +3,133 @@ import {
   Toolbar,
   IconButton,
   Typography,
-  Button,
-  Menu,
-  MenuItem,
   Avatar,
   Box,
   Tooltip,
   Badge,
   useTheme,
   useMediaQuery,
-  CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
+  Stack,
+  alpha,
+  styled
 } from '@mui/material';
 import {
   Menu as MenuIcon,
   Notifications,
   DarkMode,
   LightMode,
-  Settings,
   Help,
-  Logout,
   Person,
-  Info,
-  BugReport,
-  Support,
 } from '@mui/icons-material';
-import { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../firebase';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { useThemeContext } from '../contexts/ThemeContext';
 
-export default function Header({ open, setOpen }) {
+const StyledAppBar = styled(AppBar)(({ theme }) => ({
+  backgroundColor: alpha(theme.palette.background.paper, 0.8),
+  backdropFilter: 'blur(12px)',
+  boxShadow: 'none',
+  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+  color: theme.palette.text.primary,
+  transition: theme.transitions.create(['margin', 'width'], {
+    easing: theme.transitions.easing.easeInOut,
+    duration: theme.transitions.duration.standard,
+  }),
+  zIndex: theme.zIndex.drawer + 1,
+}));
+
+const LogoText = styled(Typography)(({ theme }) => ({
+  fontWeight: 800,
+  letterSpacing: '1px',
+  background: theme.palette.mode === 'dark'
+    ? `linear-gradient(45deg, ${theme.palette.primary.light}, ${theme.palette.secondary.light})`
+    : `linear-gradient(45deg, ${theme.palette.primary.dark}, ${theme.palette.secondary.dark})`,
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  backgroundClip: 'text',
+  textFillColor: 'transparent',
+}));
+
+export default function Header({ onToggleSidebar, open }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { darkMode, toggleTheme } = useThemeContext();
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [helpDialogOpen, setHelpDialogOpen] = useState(false);
-
-  const handleMenu = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleThemeToggle = () => {
-    toggleTheme();
-  };
-
-  // Profile page route
-  const handleProfile = () => {
-    handleClose();
-    navigate('/dashboard/profile');
-  };
-
-  // Settings page route
-  const handleSettings = () => {
-    handleClose();
-    navigate('/dashboard/settings');
-  };
-
-  // Help dialog
-  const handleHelp = () => {
-    handleClose();
-    setHelpDialogOpen(true);
-  };
-
-  const handleHelpClose = () => {
-    setHelpDialogOpen(false);
-  };
-
-  // Fetch notifications
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        // Create a compound index for userId and createdAt
-        const q = query(
-          collection(db, 'notifications'),
-          where('userId', '==', user?.uid),
-          orderBy('createdAt', 'desc'),
-          limit(10) // Limit the number of notifications fetched
-        );
-        const querySnapshot = await getDocs(q);
-        const notifications = querySnapshot.docs.map(doc => ({
-          ...doc.data(),
-          id: doc.id
-        }));
-        setNotifications(notifications);
-        setUnreadCount(notifications.filter(n => !n.read).length);
-      } catch (error) {
-        console.error('Error fetching notifications:', error);
-      }
-    };
-
-    if (user) {
-      fetchNotifications();
-    }
-  }, [user]);
+  const [notifications] = useState([]);
 
   return (
-    <AppBar
-      position="fixed"
-      sx={{
-        zIndex: (theme) => theme.zIndex.drawer + 1,
-        bgcolor: 'background.paper',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        transition: open ? 'width 0.3s ease-in-out' : 'width 0.3s ease-in-out',
-        width: open ? `calc(100% - ${220}px)` : '100%',
-      }}
-    >
-      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+    <StyledAppBar position="fixed">
+      <Toolbar sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between',
+        px: 3,
+      }}>
+        <Stack direction="row" alignItems="center" spacing={2}>
           <IconButton
             color="inherit"
             aria-label="open drawer"
-            onClick={() => setOpen(!open)}
+            onClick={onToggleSidebar}
             edge="start"
-            sx={{ mr: 2, ...(open && { display: 'none' }) }}
+            sx={{ 
+              mr: 2,
+              color: theme.palette.text.primary,
+              transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: theme.transitions.create('transform', {
+                duration: theme.transitions.duration.standard,
+                easing: theme.transitions.easing.easeInOut,
+              }),
+            }}
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Avatar
-                sx={{
-                  width: 32,
-                  height: 32,
-                  bgcolor: 'primary.main',
-                  color: 'white',
-                }}
-              >
-                CH
-              </Avatar>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Avatar
+              sx={{
+                width: 32,
+                height: 32,
+                bgcolor: 'primary.main',
+                color: 'white',
+                mr: 1.5
+              }}
+            >
+              CH
+            </Avatar>
+            <LogoText variant="h6">
               Caregiver Hub
-            </Box>
-          </Typography>
-        </Box>
+            </LogoText>
+          </Box>
+        </Stack>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Stack direction="row" spacing={1} alignItems="center">
           <Tooltip title="Notifications">
-            <IconButton color="inherit" size="large">
-              <Badge badgeContent={unreadCount} color="error">
+            <IconButton 
+              color="inherit" 
+              size="large"
+              sx={{
+                '&:hover': {
+                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                }
+              }}
+            >
+              <Badge badgeContent={notifications.length} color="error">
                 <Notifications />
               </Badge>
             </IconButton>
           </Tooltip>
 
-          <Tooltip title="Theme">
+          <Tooltip title={darkMode ? 'Light mode' : 'Dark mode'}>
             <IconButton 
               color="inherit" 
               size="large"
-              onClick={handleThemeToggle}
+              onClick={toggleTheme}
+              sx={{
+                '&:hover': {
+                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                }
+              }}
             >
               {darkMode ? <LightMode /> : <DarkMode />}
             </IconButton>
@@ -175,113 +139,44 @@ export default function Header({ open, setOpen }) {
             <IconButton 
               color="inherit" 
               size="large"
-              onClick={handleHelp}
+              sx={{
+                '&:hover': {
+                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                }
+              }}
             >
               <Help />
             </IconButton>
           </Tooltip>
 
-          <Box>
+          <Tooltip title="Profile">
             <IconButton
               size="large"
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleMenu}
-              color="inherit"
+              onClick={() => navigate('/profile')}
+              sx={{
+                '&:hover': {
+                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                }
+              }}
             >
               <Avatar
                 alt={user?.email || 'Profile'}
                 src={user?.photoURL}
-                sx={{ width: 32, height: 32 }}
+                sx={{ 
+                  width: 32, 
+                  height: 32,
+                  border: `2px solid ${alpha(theme.palette.primary.main, 0.5)}`,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'scale(1.1)',
+                    borderColor: theme.palette.primary.main,
+                  }
+                }}
               />
             </IconButton>
-            <Menu
-              id="menu-appbar"
-              anchorEl={anchorEl}
-              anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              open={Boolean(anchorEl)}
-              onClose={handleClose}
-              sx={{
-                '& .MuiMenuItem-root': {
-                  minWidth: 160,
-                  '&:hover': {
-                    backgroundColor: 'primary.main',
-                    color: 'white',
-                  },
-                },
-              }}
-            >
-              <MenuItem onClick={handleProfile}>
-                <Person sx={{ mr: 1 }} />
-                <Typography textAlign="center">Profile</Typography>
-              </MenuItem>
-              <MenuItem onClick={handleSettings}>
-                <Settings sx={{ mr: 1 }} />
-                <Typography textAlign="center">Settings</Typography>
-              </MenuItem>
-              <MenuItem onClick={handleHelp}>
-                <Help sx={{ mr: 1 }} />
-                <Typography textAlign="center">Help</Typography>
-              </MenuItem>
-            </Menu>
-          </Box>
-        </Box>
+          </Tooltip>
+        </Stack>
       </Toolbar>
-      <Dialog
-        open={helpDialogOpen}
-        onClose={handleHelpClose}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Need Help?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Getting Started
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Caregiver Hub is your one-stop platform for managing caregiving tasks, scheduling, and communication.
-              </Typography>
-            </Box>
-
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Features
-              </Typography>
-              <ul>
-                <li>Task Management</li>
-                <li>Calendar Scheduling</li>
-                <li>Family Notes</li>
-                <li>Real-time Notifications</li>
-              </ul>
-            </Box>
-
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Support
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                For technical issues or feedback, please contact our support team.
-              </Typography>
-            </Box>
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleHelpClose} color="primary">
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </AppBar>
+    </StyledAppBar>
   );
-};
+}

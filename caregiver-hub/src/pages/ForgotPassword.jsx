@@ -12,18 +12,12 @@ import {
 } from '@mui/material';
 import { 
   Link, 
-  useNavigate, 
-  useLocation 
+  useNavigate 
 } from 'react-router-dom';
 import { 
   Email, 
-  Lock, 
-  Visibility, 
-  VisibilityOff,
-  ArrowBack,
-  Google
+  ArrowBack
 } from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
 import { styled } from '@mui/material/styles';
 
 const AuthContainer = styled(Paper)(({ theme }) => ({
@@ -46,66 +40,32 @@ const AuthContainer = styled(Paper)(({ theme }) => ({
   }
 }));
 
-const AuthHeader = styled(Box)(({ theme }) => ({
-  textAlign: 'center',
-  marginBottom: theme.spacing(4),
-  '& h4': {
-    fontWeight: 700,
-    marginBottom: theme.spacing(1),
-    color: theme.palette.text.primary
-  },
-  '& p': {
-    color: theme.palette.text.secondary
-  }
-}));
-
-const GoogleButton = styled(Button)(({ theme }) => ({
-  background: 'linear-gradient(45deg, #4285F4 0%, #4285F4 50%, #34A853 50%, #34A853 75%, #FBBC05 75%, #FBBC05 85%, #EA4335 85%, #EA4335 100%)',
-  color: 'white',
-  textTransform: 'none',
-  fontWeight: 600,
-  borderRadius: 8,
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    opacity: 0.9,
-    transform: 'translateY(-2px)',
-    boxShadow: theme.shadows[4],
-  },
-  '&:disabled': {
-    opacity: 0.7,
-    transform: 'none',
-  },
-}));
-
-export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { login, loginWithGoogle } = useAuth();
+export default function ForgotPassword() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const successMessage = location.state?.successMessage;
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!email.trim() || !password.trim()) {
-      setError('Please fill in all fields');
+    if (!email.trim()) {
+      setError('Please enter your email address');
       return;
     }
 
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
-      console.log('Attempting login with email:', email);
-      await login(email, password, navigate);
-      console.log('Login successful, redirecting to dashboard');
+      // TODO: Implement actual password reset email sending
+      console.log('Sending password reset email to:', email);
+      setSuccess('Password reset email sent! Please check your inbox.');
     } catch (err) {
-      console.error('Login error:', err);
-      setError(err.message || 'Failed to login. Please check your credentials.');
+      console.error('Password reset error:', err);
+      setError(err.message || 'Failed to send password reset email. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -130,14 +90,14 @@ export default function Login() {
 
         <Box sx={{ textAlign: 'center', mb: 4 }}>
           <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-            Welcome Back
+            Forgot Password
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Sign in to continue to Caregiver Hub
+            Enter your email address and we'll send you a link to reset your password
           </Typography>
         </Box>
 
-        {successMessage && (
+        {success && (
           <Typography 
             color="success.main" 
             variant="body2" 
@@ -151,8 +111,7 @@ export default function Login() {
               gap: 1
             }}
           >
-            <CheckCircle fontSize="small" />
-            {successMessage}
+            {success}
           </Typography>
         )}
 
@@ -170,12 +129,11 @@ export default function Login() {
               gap: 1
             }}
           >
-            <Error fontSize="small" />
             {error}
           </Typography>
         )}
 
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+        <Box component="form" onSubmit={handleSubmit}>
           <TextField
             fullWidth
             label="Email Address"
@@ -194,57 +152,21 @@ export default function Login() {
             }}
           />
 
-          <TextField
-            fullWidth
-            label="Password"
-            margin="normal"
-            type={showPassword ? 'text' : 'password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            disabled={loading}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Lock color="action" />
-                </InputAdornment>
-              ),
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={() => setShowPassword(!showPassword)}
-                    edge="end"
-                  >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          <Box sx={{ textAlign: 'right', mt: 1 }}>
-            <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
-              <Typography variant="body2" color="primary">
-                Forgot password?
-              </Typography>
-            </Link>
-          </Box>
-
           <Button
             fullWidth
             size="large"
             variant="contained"
             sx={{ mt: 3, py: 1.5 }}
             type="submit"
-            disabled={loading || !email.trim() || !password.trim()}
+            disabled={loading || !email.trim()}
           >
             {loading ? (
               <>
                 <CircularProgress size={24} sx={{ mr: 1 }} />
-                Signing in...
+                Sending Email...
               </>
             ) : (
-              'Sign In'
+              'Send Reset Link'
             )}
           </Button>
 
@@ -254,34 +176,13 @@ export default function Login() {
             </Typography>
           </Divider>
 
-          <GoogleButton
-            fullWidth
-            size="large"
-            sx={{ 
-              mt: 2, 
-              py: 1.5,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 1,
-              '& .MuiButton-startIcon': {
-                color: 'white',
-              }
-            }}
-            startIcon={<Google sx={{ fontSize: 24 }} />}
-            onClick={() => loginWithGoogle(navigate)}
-            disabled={loading}
-          >
-            Continue with Google
-          </GoogleButton>
-
-          <Box sx={{ textAlign: 'center', mt: 3 }}>
+          <Box sx={{ textAlign: 'center' }}>
             <Typography variant="body2" sx={{ display: 'inline' }}>
-              Don't have an account?{' '}
+              Remember your password?{' '}
             </Typography>
-            <Link to="/register" style={{ textDecoration: 'none' }}>
+            <Link to="/login" style={{ textDecoration: 'none' }}>
               <Typography variant="body2" color="primary" sx={{ fontWeight: 600 }}>
-                Register now
+                Sign in
               </Typography>
             </Link>
           </Box>

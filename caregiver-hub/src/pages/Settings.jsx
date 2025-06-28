@@ -15,15 +15,23 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Divider,
+  Card,
+  CardContent,
+  Avatar,
+  useTheme
 } from '@mui/material';
-import {
-  Notifications,
-  Email,
-  CalendarToday,
-  Brightness4,
-  Brightness7,
-  Info,
-} from '@mui/icons-material';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import EmailIcon from '@mui/icons-material/Email';
+import Brightness4 from '@mui/icons-material/Brightness4';
+import Brightness7 from '@mui/icons-material/Brightness7';
+import LanguageIcon from '@mui/icons-material/Language';
+import Schedule from '@mui/icons-material/Schedule';
+import DeleteIcon from '@mui/icons-material/Delete';
+import SaveIcon from '@mui/icons-material/Save';
+import InfoIcon from '@mui/icons-material/Info';
+import SettingsIcon from '@mui/icons-material/Settings';
+
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
@@ -32,6 +40,7 @@ import { useThemeContext } from '../contexts/ThemeContext';
 export default function Settings() {
   const { user } = useAuth();
   const { darkMode, toggleTheme } = useThemeContext();
+  const theme = useTheme();
   const [settings, setSettings] = useState({
     notifications: true,
     emailNotifications: true,
@@ -85,11 +94,9 @@ export default function Settings() {
       setError('');
       setSuccess('');
 
-      // First check if user document exists
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
-      // If user document doesn't exist, create it with default settings
       if (!userDoc.exists()) {
         await setDoc(userDocRef, {
           settings: settings,
@@ -97,7 +104,6 @@ export default function Settings() {
           updatedAt: new Date()
         });
       } else {
-        // If user document exists, update it
         await updateDoc(userDocRef, {
           settings: settings,
           updatedAt: new Date(),
@@ -105,6 +111,7 @@ export default function Settings() {
       }
 
       setSuccess('Settings saved successfully!');
+      setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       console.error('Error saving settings:', error);
       setError('Failed to save settings');
@@ -118,16 +125,12 @@ export default function Settings() {
       setLoading(true);
       setError('');
 
-      // Delete user from Firestore
       await updateDoc(doc(db, 'users', user.uid), {
         isActive: false,
         deletedAt: new Date(),
       });
 
-      // Delete user from Firebase Auth
       await user.delete();
-
-      // Redirect to login page
       window.location.href = '/login';
     } catch (error) {
       console.error('Error deleting account:', error);
@@ -139,83 +142,125 @@ export default function Settings() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Settings
-      </Typography>
+    <Box sx={{ p: 3, maxWidth: 1200, margin: '0 auto' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <SettingsIcon color="primary" sx={{ fontSize: 40, mr: 2 }} />
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+          Account Settings
+        </Typography>
+      </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
           {error}
         </Alert>
       )}
 
       {success && (
-        <Alert severity="success" sx={{ mb: 2 }}>
+        <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess('')}>
           {success}
         </Alert>
       )}
 
-      <Paper sx={{ p: 3, mt: 2 }}>
-        <Grid container spacing={3}>
-          <Grid xs={12} md={6}>
-            <Typography variant="h6" gutterBottom>
-              Notifications
-            </Typography>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={settings.notifications}
-                  onChange={() => handleToggle('notifications')}
-                  color="primary"
-                />
-              }
-              label="App Notifications"
-              sx={{ mb: 2 }}
-            />
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={settings.emailNotifications}
-                  onChange={() => handleToggle('emailNotifications')}
-                  color="primary"
-                />
-              }
-              label="Email Notifications"
-              sx={{ mb: 2 }}
-            />
-          </Grid>
-
-          <Grid xs={12} md={6}>
-            <Typography variant="h6" gutterBottom>
-              Appearance
-            </Typography>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={darkMode}
-                  onChange={toggleTheme}
-                  color="primary"
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={4}>
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar
+                  src={user?.photoURL}
                   sx={{
-                    '& .MuiSwitch-switchBase': {
-                      '&.Mui-checked': {
-                        color: '#1976d2',
-                      },
-                    },
+                    width: 80,
+                    height: 80,
+                    bgcolor: theme.palette.primary.main,
+                    mr: 2
                   }}
-                />
-              }
-              label="Dark Mode"
-              sx={{ mb: 2 }}
-            />
-          </Grid>
+                >
+                  {user?.displayName?.[0] || 'U'}
+                </Avatar>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    {user?.displayName || 'User'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {user?.email}
+                  </Typography>
+                </Box>
+              </Box>
+              <Divider sx={{ my: 2 }} />
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Last updated: {new Date().toLocaleDateString()}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
 
-          <Grid xs={12}>
-            <Typography variant="h6" gutterBottom>
-              Language & Region
-            </Typography>
-            <Grid container spacing={3}>
-              <Grid xs={12} md={6}>
+        <Grid item xs={12} md={8}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
+                Notification Preferences
+              </Typography>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                <NotificationsIcon color="primary" sx={{ mr: 2 }} />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.notifications}
+                      onChange={() => handleToggle('notifications')}
+                      color="primary"
+                    />
+                  }
+                  label="App Notifications"
+                  sx={{ flexGrow: 1 }}
+                />
+              </Box>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                <EmailIcon color="primary" sx={{ mr: 2 }} />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.emailNotifications}
+                      onChange={() => handleToggle('emailNotifications')}
+                      color="primary"
+                    />
+                  }
+                  label="Email Notifications"
+                  sx={{ flexGrow: 1 }}
+                />
+              </Box>
+
+              <Divider sx={{ my: 3 }} />
+
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
+                Appearance
+              </Typography>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                {darkMode ? <Brightness4 color="primary" sx={{ mr: 2 }} /> : <Brightness7 color="primary" sx={{ mr: 2 }} />}
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={darkMode}
+                      onChange={toggleTheme}
+                      color="primary"
+                    />
+                  }
+                  label={darkMode ? 'Dark Mode' : 'Light Mode'}
+                  sx={{ flexGrow: 1 }}
+                />
+              </Box>
+
+              <Divider sx={{ my: 3 }} />
+
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
+                Language & Region
+              </Typography>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                <LanguageIcon color="primary" sx={{ mr: 2 }} />
                 <TextField
                   fullWidth
                   select
@@ -223,15 +268,17 @@ export default function Settings() {
                   name="language"
                   value={settings.language}
                   onChange={handleInputChange}
-                  sx={{ mb: 2 }}
+                  variant="outlined"
                 >
                   <MenuItem value="en">English</MenuItem>
                   <MenuItem value="hi">Hindi</MenuItem>
                   <MenuItem value="es">Spanish</MenuItem>
                   <MenuItem value="fr">French</MenuItem>
                 </TextField>
-              </Grid>
-              <Grid xs={12} md={6}>
+              </Box>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                <Schedule color="primary" sx={{ mr: 2 }} />
                 <TextField
                   fullWidth
                   select
@@ -239,53 +286,58 @@ export default function Settings() {
                   name="timezone"
                   value={settings.timezone}
                   onChange={handleInputChange}
-                  sx={{ mb: 2 }}
+                  variant="outlined"
                 >
-                  <MenuItem value="Asia/Kolkata">Asia/Kolkata</MenuItem>
-                  <MenuItem value="America/New_York">America/New_York</MenuItem>
-                  <MenuItem value="Europe/London">Europe/London</MenuItem>
-                  <MenuItem value="Australia/Sydney">Australia/Sydney</MenuItem>
+                  <MenuItem value="Asia/Kolkata">Asia/Kolkata (IST)</MenuItem>
+                  <MenuItem value="America/New_York">America/New_York (EST)</MenuItem>
+                  <MenuItem value="Europe/London">Europe/London (GMT)</MenuItem>
+                  <MenuItem value="Australia/Sydney">Australia/Sydney (AEST)</MenuItem>
                 </TextField>
-              </Grid>
-            </Grid>
-          </Grid>
+              </Box>
 
-          <Grid xs={12}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleSubmit}
-              disabled={loading}
-              fullWidth
-              sx={{ mb: 2 }}
-            >
-              {loading ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </Grid>
+              <Divider sx={{ my: 3 }} />
 
-          <Grid xs={12}>
-            <Button
-              variant="outlined"
-              color="error"
-              startIcon={<Info />}
-              onClick={() => setDeleteDialogOpen(true)}
-              fullWidth
-              sx={{ mb: 2 }}
-            >
-              Delete Account
-            </Button>
-          </Grid>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  startIcon={<SaveIcon />}
+                  sx={{ px: 4 }}
+                >
+                  {loading ? 'Saving...' : 'Save Settings'}
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={() => setDeleteDialogOpen(true)}
+                >
+                  Delete Account
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
         </Grid>
-      </Paper>
+      </Grid>
 
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
+        PaperProps={{ sx: { borderRadius: 2 } }}
       >
-        <DialogTitle>Delete Account</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, color: 'error.main' }}>
+          <DeleteIcon color="error" sx={{ verticalAlign: 'middle', mr: 1 }} />
+          Delete Account
+        </DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete your account? This action is irreversible.
+            Are you sure you want to permanently delete your account? This action cannot be undone.
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            All your data will be removed from our systems.
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -294,8 +346,9 @@ export default function Settings() {
             onClick={handleDeleteAccount}
             color="error"
             disabled={loading}
+            variant="contained"
           >
-            {loading ? 'Deleting...' : 'Delete Account'}
+            {loading ? 'Deleting...' : 'Confirm Delete'}
           </Button>
         </DialogActions>
       </Dialog>

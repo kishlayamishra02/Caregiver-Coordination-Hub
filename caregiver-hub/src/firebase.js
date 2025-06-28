@@ -2,6 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { getStorage } from 'firebase/storage';
 
 // Check if we're in production
 const isProduction = import.meta.env.NODE_ENV === 'production';
@@ -47,6 +48,7 @@ if (!app) {
 const messaging = getMessaging(app);
 const db = getFirestore(app);
 const auth = getAuth(app);
+const storage = getStorage(app);
 
 // Check if Firebase services are properly initialized
 if (!db || !auth || !messaging) {
@@ -54,5 +56,5 @@ if (!db || !auth || !messaging) {
 }
 
 // Export Firebase services
-export { messaging, getToken, onMessage, db, auth, app };
+export { app, messaging, db, auth, storage, getToken, onMessage };
 export default app;

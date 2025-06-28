@@ -4,9 +4,13 @@ import CalendarView from '../components/CalendarView';
 export default function Calendar() {
   const { user } = useAuth();
 
+  if (!user) {
+    return <div>Loading user...</div>;
+  }
+
   return (
     <div>
-      <CalendarView user={user} />
+      <CalendarView />
     </div>
   );
 }

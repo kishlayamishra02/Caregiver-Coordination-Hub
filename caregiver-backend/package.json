@@ -20,6 +20,9 @@
   "homepage": "https://github.com/kishlayamishra02/Caregiver-Coordination-Hub#readme",
   "dependencies": {
     "20": "^3.1.9",
-    "firebase-admin": "^13.4.0"
+    "firebase-admin": "^13.4.0",
+    "firebase-functions": "^6.3.2",
+    "googleapis": "^150.0.1",
+    "nodemailer": "^6.9.1"
   }
 }

@@ -1,10 +1,11 @@
 import React from 'react';
 import { createContext, useState, useEffect } from 'react';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const auth = getAuth();
+const googleProvider = new GoogleAuthProvider();
 
 // Function to translate Firebase error codes to user-friendly messages
 const getErrorMessage = (error) => {
@@ -46,7 +47,7 @@ export const AuthProvider = ({ children }) => {
     return unsubscribe;
   }, [auth]);
 
-  const login = async (email, password) => {
+  const login = async (email, password, navigate) => {
     try {
       console.log('Attempting login with:', email);
 
@@ -56,9 +57,89 @@ export const AuthProvider = ({ children }) => {
 
       const result = await signInWithEmailAndPassword(auth, email, password);
       console.log('Login successful:', result.user);
+
+      // Wait for user state to be fully updated
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Redirect to dashboard after successful login
+      navigate('/dashboard', { replace: true });
+
+      // Update user's last login time in Firestore
+      if (result.user && result.user.uid) {
+        try {
+          await setDoc(
+            doc(db, "users", result.user.uid),
+            {
+              lastLogin: new Date(),
+            },
+            { merge: true }
+          );
+        } catch (firestoreError) {
+          console.error("Failed to update last login time:", firestoreError);
+        }
+      }
+
       return result.user;
     } catch (error) {
       console.error('Login error:', error);
+      const errorMessage = getErrorMessage(error);
+      console.error('Translated error:', errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
+  const loginWithGoogle = async (navigate) => {
+    try {
+      console.log('Attempting Google login');
+
+      if (!auth) {
+        throw new Error('Firebase authentication not initialized');
+      }
+
+      const result = await signInWithPopup(auth, googleProvider);
+      console.log('Google login successful:', result.user);
+
+      // Wait for user state to be fully updated
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Try to update user profile
+      try {
+        await updateProfile(result.user, {
+          displayName: result.user.displayName,
+          photoURL: result.user.photoURL
+        });
+      } catch (profileError) {
+        console.error('Failed to update profile:', profileError);
+      }
+
+      // Try to update Firestore
+      try {
+        const userDoc = doc(db, "users", result.user.uid);
+        const userSnap = await getDoc(userDoc);
+
+        if (!userSnap.exists()) {
+          await setDoc(userDoc, {
+            name: result.user.displayName,
+            email: result.user.email,
+            photoURL: result.user.photoURL,
+            createdAt: new Date(),
+            lastLogin: new Date(),
+            provider: 'google'
+          });
+        } else {
+          await updateDoc(userDoc, {
+            lastLogin: new Date()
+          });
+        }
+      } catch (firestoreError) {
+        console.error('Failed to update Firestore:', firestoreError);
+      }
+
+      // Navigate to dashboard regardless of Firestore errors
+      navigate('/dashboard', { replace: true });
+      return result.user;
+    } catch (error) {
+      console.error('Google login error:', error);
       const errorMessage = getErrorMessage(error);
       console.error('Translated error:', errorMessage);
       throw new Error(errorMessage);
@@ -124,6 +205,7 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     login,
+    loginWithGoogle,
     register,
     logout,
     db

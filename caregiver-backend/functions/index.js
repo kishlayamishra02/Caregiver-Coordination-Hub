@@ -34,13 +34,13 @@ exports.createTask = functions.https.onRequest(async (req, res) => {
   try {
     const { title, due, assignedTo, status = 'pending', notes = '' } = req.body;
 
-    // 🔍 Validate required fields
+    // Validate required fields
     validateFields(req.body, ['title', 'due', 'assignedTo']);
 
     const newTask = { title, due, assignedTo, status, notes };
     const docRef = await db.collection('tasks').add(newTask);
 
-    // 🔐 Google Calendar requires OAuth token (frontend must handle auth)
+    // Google Calendar requires OAuth token (frontend must handle auth)
     const calendar = await getAuthorizedClient(assignedTo);
     const event = await calendar.events.insert({
       calendarId: 'primary',
@@ -64,13 +64,13 @@ exports.createTask = functions.https.onRequest(async (req, res) => {
 
   } catch (err) {
     console.error('createTask error:', err.message);
-    res.status(400).send(err.message); // ⛑ Send validation or calendar error
+    res.status(400).send(err.message); // Send validation or calendar error
   }
 });
 
 
 
-eexports.getTasks = functions.https.onRequest(async (req, res) => {
+exports.getTasks = functions.https.onRequest(async (req, res) => {
   const { assignedTo } = req.query;
   try {
     let query = db.collection('tasks');
@@ -176,7 +176,7 @@ exports.getFamily = functions.https.onRequest(async (req, res) => {
   }
 });
 
-eexports.addFamilyMember = functions.https.onRequest(async (req, res) => {
+exports.addFamilyMember = functions.https.onRequest(async (req, res) => {
   try {
     validateFields(req.body, ['familyId', 'userId']);
     const { familyId, userId } = req.body;
@@ -225,7 +225,7 @@ exports.oauthCallback = functions.https.onRequest(async (req, res) => {
     const { tokens } = await oAuth2Client.getToken(code);
     oAuth2Client.setCredentials(tokens);
 
-    const userId = 'demo-user-id'; // 🔁 Replace with real Firebase Auth UID
+    const userId = 'demo-user-id'; // Replace with real Firebase Auth UID
 
     await db.collection('calendarTokens').doc(userId).set({
       tokens,
@@ -377,7 +377,7 @@ exports.sendTaskReminders = functions.pubsub.schedule('every 60 minutes').onRun(
       const task = doc.data();
       const { title, due, notes, assignedTo } = task;
 
-      // 🔄 FRONTEND SHOULD:
+      // FRONTEND SHOULD:
       // - Use Firebase Messaging to get FCM token on login/init
       // - Then call backend API to save it to: db.collection('fcmTokens').doc(userId).set({ token })
       const tokenDoc = await db.collection('fcmTokens').doc(assignedTo).get();
@@ -385,14 +385,14 @@ exports.sendTaskReminders = functions.pubsub.schedule('every 60 minutes').onRun(
 
       const payload = {
         notification: {
-          title: `⏰ Reminder: ${title}`,
+          title: `Reminder: ${title}`,
           body: `Due on ${due}${notes ? ` — ${notes}` : ''}`
         },
         token: tokenDoc.data().token
       };
 
       try {
-        await messaging.send(payload);
+        await admin.messaging().send(payload);
         console.log(`Reminder sent to ${assignedTo} for task: ${title}`);
       } catch (err) {
         console.error(`Failed to send reminder for "${title}":`, err.message);
@@ -471,3 +471,101 @@ exports.getMessages = functions.https.onRequest(async (req, res) => {
   }
 });
 
+exports.sendTaskReminder = functions.https.onCall(async (data, context) => {
+  const { title, dueDate, token } = data;
+
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  }
+
+  try {
+    const message = {
+      notification: {
+        title: `Task Reminder: ${title}`,
+        body: `This task is due at ${dueDate}`,
+        icon: '/logo192.png'
+      },
+      token
+    };
+
+    await admin.messaging().send(message);
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending notification:', error);
+    throw new functions.https.HttpsError('internal', 'Failed to send notification');
+  }
+});
+
+// Cloud Scheduler function to run every 5 minutes
+exports.checkReminders = functions.pubsub.schedule('every 5 minutes')
+  .onRun(async (context) => {
+    try {
+      // Get current time and calculate 15 minutes from now
+      const now = new Date();
+      const fifteenMinutesFromNow = new Date();
+      fifteenMinutesFromNow.setMinutes(now.getMinutes() + 15);
+
+      // Get all users with FCM tokens
+      const usersSnapshot = await db.collection('users').get();
+      const users = usersSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // Check for upcoming tasks
+      const tasksSnapshot = await db.collection('tasks')
+        .where('dueDate', '>=', now)
+        .where('dueDate', '<=', fifteenMinutesFromNow)
+        .where('completed', '==', false)
+        .get();
+
+      // Check for upcoming notes
+      const notesSnapshot = await db.collection('notes')
+        .where('reminderDate', '>=', now)
+        .where('reminderDate', '<=', fifteenMinutesFromNow)
+        .where('completed', '==', false)
+        .get();
+
+      // Process tasks
+      await Promise.all(tasksSnapshot.docs.map(async (taskDoc) => {
+        const task = taskDoc.data();
+        const user = users.find(u => u.id === task.assignedTo);
+        if (user && user.fcmToken) {
+          await sendReminderNotification(task.title, task.dueDate.toDate(), user.fcmToken);
+        }
+      }));
+
+      // Process notes
+      await Promise.all(notesSnapshot.docs.map(async (noteDoc) => {
+        const note = noteDoc.data();
+        const user = users.find(u => u.id === note.userId);
+        if (user && user.fcmToken) {
+          await sendReminderNotification(`Note: ${note.title}`, note.reminderDate.toDate(), user.fcmToken);
+        }
+      }));
+
+      console.log('Successfully checked reminders');
+      return null;
+    } catch (error) {
+      console.error('Error in checkReminders:', error);
+      throw error;
+    }
+  });
+
+const sendReminderNotification = async (title, dueDate, token) => {
+  try {
+    const message = {
+      notification: {
+        title: `Reminder: ${title}`,
+        body: `This is due at ${dueDate.toLocaleString()}`,
+        icon: '/logo192.png'
+      },
+      token
+    };
+
+    await admin.messaging().send(message);
+  } catch (error) {
+    console.error('Error sending reminder notification:', error);
+    throw error;
+  }
+};
