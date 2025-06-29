@@ -8,11 +8,10 @@ import {
   Paper,
   Divider,
   IconButton,
-  InputAdornment,
-  Link
+  InputAdornment
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import {
   Email,
   Lock,
@@ -234,11 +233,11 @@ export default function Login() {
           />
 
           <Box sx={{ textAlign: 'right', mt: 1 }}>
-            <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
+            <RouterLink to="/forgot-password" style={{ textDecoration: 'none' }}>
               <Typography variant="body2" color="primary">
                 Forgot password?
               </Typography>
-            </Link>
+            </RouterLink>
           </Box>
 
           <Button
@@ -259,8 +258,30 @@ export default function Login() {
             )}
           </Button>
 
-          <Divider sx={{ my: 3 }}>
-            <Typography variant="body2" color="text.secondary">
+          <Divider sx={{ 
+            my: 3,
+            display: 'flex',
+            alignItems: 'center',
+            '&::before': {
+              flexGrow: 1,
+              backgroundColor: 'divider',
+            },
+            '&::after': {
+              flexGrow: 1,
+              backgroundColor: 'divider',
+            }
+          }}>
+            <Typography 
+              variant="body2" 
+              color="white"
+              sx={{ 
+                px: 2,
+                backgroundColor: 'background.paper',
+                borderRadius: 1,
+                fontFamily: 'Times New Roman, serif',
+                fontWeight: 'bold'
+              }}
+            >
               OR
             </Typography>
           </Divider>
@@ -290,11 +311,18 @@ export default function Login() {
             <Typography variant="body2" sx={{ display: 'inline' }}>
               Don't have an account?{' '}
             </Typography>
-            <Link to="/register" style={{ textDecoration: 'none' }}>
-              <Typography variant="body2" color="primary" sx={{ fontWeight: 600 }}>
-                Register now
-              </Typography>
-            </Link>
+            <RouterLink 
+              to="/register" 
+              style={{ 
+                textDecoration: 'none',
+                color: '#1976d2',
+                fontWeight: 600,
+                display: 'inline-block',
+                padding: '0 8px'
+              }}
+            >
+              Register now
+            </RouterLink>
           </Box>
         </Box>
       </AuthContainer>
