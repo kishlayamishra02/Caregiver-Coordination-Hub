@@ -35,9 +35,71 @@ const DashboardHeader = styled(Box)(({ theme }) => ({
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
     fontWeight: 800,
-    fontSize: '2.4rem',
+    fontSize: '2.8rem',
+    lineHeight: 1.2,
     marginBottom: theme.spacing(1),
+    fontFamily: '"Times New Roman", Times, serif',
+    letterSpacing: '-0.02em',
+    textTransform: 'uppercase',
   },
+  '& p': {
+    fontSize: '1.1rem',
+    color: theme.palette.text.secondary,
+    fontWeight: 500,
+    marginBottom: theme.spacing(2),
+    fontFamily: '"Times New Roman", Times, serif',
+    lineHeight: 1.6,
+  }
+}));
+
+const StatCard = styled(Box)(({ theme, color }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  padding: theme.spacing(2.5),
+  gap: theme.spacing(2),
+  borderRadius: 14,
+  height: '100%',
+  background: alpha(color, 0.1),
+  borderLeft: `4px solid ${color}`,
+  '& h4': {
+    fontSize: '1.2rem',
+    fontWeight: 600,
+    color: theme.palette.text.primary,
+    fontFamily: '"Times New Roman", Times, serif',
+    lineHeight: 1.4,
+    letterSpacing: '-0.01em',
+  },
+  '& span': {
+    fontSize: '1.1rem',
+    color: theme.palette.text.secondary,
+    fontFamily: '"Times New Roman", Times, serif',
+    lineHeight: 1.5,
+    letterSpacing: '-0.01em',
+  }
+}));
+
+const InsightBox = styled(Box)(({ theme, color }) => ({
+  padding: theme.spacing(2),
+  borderRadius: 12,
+  marginBottom: theme.spacing(2),
+  borderLeft: `4px solid ${color}`,
+  backgroundColor: alpha(color, 0.08),
+  '& h4': {
+    fontSize: '1.2rem',
+    fontWeight: 600,
+    color: theme.palette.text.primary,
+    marginBottom: theme.spacing(1),
+    fontFamily: '"Times New Roman", Times, serif',
+    lineHeight: 1.4,
+    letterSpacing: '-0.01em',
+  },
+  '& p': {
+    fontSize: '1rem',
+    color: theme.palette.text.secondary,
+    lineHeight: 1.8,
+    fontFamily: '"Times New Roman", Times, serif',
+    letterSpacing: '-0.01em',
+  }
 }));
 
 const InsightCard = styled(Card)(({ theme }) => ({
@@ -50,17 +112,6 @@ const InsightCard = styled(Card)(({ theme }) => ({
   '&:hover': {
     transform: 'translateY(-3px)',
   },
-}));
-
-const StatCard = styled(Box)(({ theme, color }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  padding: theme.spacing(2.5),
-  gap: theme.spacing(2),
-  borderRadius: 14,
-  height: '100%',
-  background: alpha(color, 0.1),
-  borderLeft: `4px solid ${color}`,
 }));
 
 const ChartContainer = styled(Box)(() => ({
@@ -87,14 +138,6 @@ const SuggestionCard = styled(Box)(({ theme }) => ({
   border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
   background: theme.palette.background.paper,
   marginBottom: theme.spacing(2),
-}));
-
-const InsightBox = styled(Box)(({ theme, color }) => ({
-  padding: theme.spacing(2),
-  borderRadius: 12,
-  marginBottom: theme.spacing(2),
-  borderLeft: `4px solid ${color}`,
-  backgroundColor: alpha(color, 0.08),
 }));
 
 const COLORS = {
@@ -247,9 +290,9 @@ export default function Dashboard() {
   return (
     <DashboardContainer>
       <DashboardHeader>
-        <Typography variant="h3">Care Coordination Dashboard</Typography>
-        <Typography variant="subtitle1" color="text.secondary">
-          {format(new Date(), 'EEEE, MMM d')} • {stats.completedTasks} tasks completed
+        <Typography variant="h3">Care Coordination Platform</Typography>
+        <Typography variant="subtitle1">
+          Your comprehensive solution for caregiver coordination and management
         </Typography>
       </DashboardHeader>
 

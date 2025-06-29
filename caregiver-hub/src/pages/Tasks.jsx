@@ -6,11 +6,12 @@ import {
   Box,
   Button,
   Paper,
-  Typography,
   CircularProgress,
   Container,
   Grid,
-  Alert
+  Alert,
+  Typography,
+  useTheme
 } from '@mui/material';
 import { createTask, getTasks, updateTask, deleteTask } from '../services/taskService';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -18,6 +19,7 @@ import { db } from '../firebase';
 
 const Tasks = () => {
   const { user, loading } = useAuth();
+  const theme = useTheme();
   const [tasks, setTasks] = useState([]);
   const [openForm, setOpenForm] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
@@ -94,53 +96,67 @@ const Tasks = () => {
     }
   };
 
-  if (loading) {
-    return <CircularProgress />;
-  }
-
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ my: 4 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <Paper sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4">Tasks</Typography>
-                <Button
-                  variant="contained"
-                  onClick={() => setOpenForm(true)}
-                  sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' } }}
-                >
-                  Add Task
-                </Button>
-              </Box>
-
-              {error && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                  {error}
-                </Alert>
-              )}
-
-              <TaskList
-                tasks={tasks}
-                onEdit={handleEditTask}
-                onDelete={handleDeleteTask}
-              />
-            </Paper>
-          </Grid>
-        </Grid>
-
-        <TaskForm
-          open={openForm}
-          onClose={() => {
-            setOpenForm(false);
-            setEditingTask(null);
-          }}
-          task={editingTask}
-          onSubmit={editingTask ? () => handleEditTask(editingTask) : handleAddTask}
-        />
+    <>
+      <Box sx={{ 
+        mb: 4,
+        '& h2': {
+          background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          fontWeight: 800,
+          fontSize: '2.4rem',
+          lineHeight: 1.2,
+          marginBottom: theme.spacing(1),
+          fontFamily: '"Times New Roman", Times, serif',
+          letterSpacing: '-0.02em',
+          textTransform: 'uppercase',
+        },
+        '& p': {
+          fontSize: '1.1rem',
+          color: theme.palette.text.secondary,
+          fontWeight: 500,
+          marginBottom: theme.spacing(2),
+          fontFamily: '"Times New Roman", Times, serif',
+          lineHeight: 1.6,
+        }
+      }}>
+        <Typography variant="h2">Tasks</Typography>
+        <Typography variant="subtitle1">Manage your caregiver tasks and responsibilities</Typography>
       </Box>
-    </Container>
+      
+      <Container maxWidth="lg">
+        {loadingTasks ? (
+          <Box display="flex" justifyContent="center" py={4}>
+            <CircularProgress />
+          </Box>
+        ) : error ? (
+          <Alert severity="error">{error}</Alert>
+        ) : (
+          <>
+            <Box mb={4}>
+              <Button
+                variant="contained"
+                onClick={() => setOpenForm(true)}
+              >
+                Add Task
+              </Button>
+            </Box>
+            <TaskList tasks={tasks} onEdit={handleEditTask} onDelete={handleDeleteTask} />
+          </>
+        )}
+      </Container>
+
+      <TaskForm
+        open={openForm}
+        onClose={() => {
+          setOpenForm(false);
+          setEditingTask(null);
+        }}
+        task={editingTask}
+        onSubmit={editingTask ? handleEditTask : handleAddTask}
+      />
+    </>
   );
 };
 

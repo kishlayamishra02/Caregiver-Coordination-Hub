@@ -72,13 +72,10 @@ export default function Header({ onToggleSidebar, open }) {
               sx={{
                 width: 32,
                 height: 32,
-                bgcolor: 'primary.main',
-                color: 'white',
                 mr: 1.5
               }}
-            >
-              CH
-            </Avatar>
+              src="/faviconicon.jpg"
+            />
             <LogoText variant="h6">
               Caregiver Hub
             </LogoText>
