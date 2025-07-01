@@ -164,7 +164,7 @@ REACT_APP_FIREBASE_APP_ID=your_app_id
 
 Need help or want to contribute?
 
-- [Open an issue](https://github.com/Arjit74/Caregiver-Coordination-Hub/issues)  
+- [Open an issue](https://github.com/kishlayamishra02/Caregiver-Coordination-Hub/issues)  
 - Reach out via GitHub  
 - Join our community (Slack/Discord coming soon!)
 
