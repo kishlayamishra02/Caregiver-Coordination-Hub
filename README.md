@@ -1,7 +1,7 @@
 # 🌿 Caregiver Coordination Hub
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/Arjit74/Caregiver-Coordination-Hub/main/assets/logo192.png" alt="Caregiver Hub Banner" width="700"/>
+  <img src="https://raw.githubusercontent.com/Arjit74/Caregiver-Coordination-Hub/main/assets/giticon.jpg" alt="Caregiver Hub Banner" width="700"/>
 
   **A project by Team UnityLink for CS Base Hack4Health 2025**  
   [![Live Demo](https://img.shields.io/badge/Live_Demo-Online-brightgreen?style=for-the-badge&logo=netlify)](https://caregiverhub.netlify.app)
