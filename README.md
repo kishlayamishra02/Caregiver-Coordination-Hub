@@ -116,7 +116,7 @@ const addTask = async (task: Omit<CareTask, 'id'>) => {
 
 ### 🔧 Quick Setup
 ```bash
-git clone https://github.com/Arjit74/Caregiver-Coordination-Hub.git
+git clone https://github.com/kishlayamishra02/Caregiver-Coordination-Hub.git
 cd Caregiver-Coordination-Hub
 npm install
 cp .env.example .env
